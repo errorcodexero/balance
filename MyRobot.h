@@ -1,45 +1,17 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 05-11-2011
+// Steve Tarr - team 1425 mentor - 25-Jan-2012
+
+#ifndef _MYROBOT_H_
+#define _MYROBOT_H_
 
 #include <WPILib.h>
+#include "Balance.h"
 
 class MyRobot : public IterativeRobot
 {
-private:
-    // This example assumes tank drive with 2 CIM motors.
-    //
-    // TBD: Change from Tank to Mecanum drive.
-    //
-    // TBD: Use shaft encoders for motor rate feedback.
-    //
-    // TBD: Use accelerometers and gyros for robot motion feedback,
-    // instead of or in addition to the shaft encoders.
-    //
-    // TBD: Add light sensors for line tracking, either during
-    // autonomous mode or as directed by a "line lock" switch or
-    // a "follow line" button in teleop mode.
-
-    // driver station inputs
-    Joystick joy_left,
-    	     joy_right;
-
-    // robot outputs
-    Victor motor_left,
-    	   motor_right;
-
-    // robot control
-    RobotDrive drive;
-    
-    // compressor control
-    Compressor pressure;
-    
-    // pneumatic controls
-    Solenoid arm, grabber;
-    
-    // gun control (PWM output connector to Spike relay)
-    Relay gun;
-    
 public:
+    typedef enum { kFlightStick, kArcade, kTwoStick } DriveType;
+
     MyRobot();
 
     void RobotInit();
@@ -56,5 +28,27 @@ public:
     void AutonomousContinuous();
     void TeleopContinuous();
 
+private:
+    // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
+    SendableChooser driveChooser;
+    DriveType driveMode;
+
+    // driver station inputs
+    Joystick joy_left,
+    	     joy_right;
+
+    // robot outputs
+    Victor motor_left,
+    	   motor_right;
+
+    // robot control
+    RobotDrive drive;
+
+    // Gyro (rate of tilt sensor) input
+    AnalogChannel tilt;
+
+    // Bridge Balance Control
+    Balance balance;
 };
 
+#endif // _MYROBOT_H_

@@ -1,27 +1,21 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 05-11-2011
+// Steve Tarr - team 1425 mentor - 25-Jan-2012
 
 // WPILib Includes
 #include "IterativeRobot.h"
 
 // Our Includes
 #include "MyRobot.h"
+#include "Version.h"
+
+static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::DisabledInit()
 {
+    balance.Stop();
     drive.StopMotor();
-    pressure.Stop();
-    arm.Set(false);
-    grabber.Set(false);
-    gun.Set(Relay::kOff);
     
     SmartDashboard::Log("Disabled", "Robot State");
-    SmartDashboard::Log( 0.0, "Left" );
-    SmartDashboard::Log( 0.0, "Right" );
-    SmartDashboard::Log( false, "Compressor" );
-    SmartDashboard::Log( false, "Arm" );
-    SmartDashboard::Log( false, "Grabber" );
-    SmartDashboard::Log( false, "Gun" );
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Disabled");
@@ -30,11 +24,11 @@ void MyRobot::DisabledInit()
 
 void MyRobot::DisabledPeriodic()
 {
-    m_watchdog.Feed();
+    ;
 }
 
 void MyRobot::DisabledContinuous()
 {
-    taskDelay(1);		// be nice to other tasks
+    ;
 }
 

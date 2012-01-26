@@ -1,65 +1,63 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 05-11-2011
+// Steve Tarr - team 1425 mentor - 25-Jan-2012
 
 // WPILib Includes
 #include "IterativeRobot.h"
 
 // Our Includes
 #include "MyRobot.h"
+#include "Version.h"
+
+static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::TeleopInit()
 {
+    balance.Stop();
     drive.StopMotor();
-    pressure.Start();
-    arm.Set(false);
-    grabber.Set(false);
-    gun.Set(Relay::kOff);
     
-    SmartDashboard::Log("Autonomous", "Robot State");
-    SmartDashboard::Log( 0.0, "Left" );
-    SmartDashboard::Log( 0.0, "Right" );
-    SmartDashboard::Log( true, "Compressor" );
-    SmartDashboard::Log( false, "Arm" );
-    SmartDashboard::Log( false, "Grabber" );
-    SmartDashboard::Log( false, "Gun" );
+    SmartDashboard::Log("Teleop", "Robot State");
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Teleop Mode");
     lcd->UpdateLCD();
+
+    driveMode = (DriveType) (int) driveChooser.GetSelected();
 }
 
 void MyRobot::TeleopPeriodic()
 {
-    float left, right;
-    bool trigger;
-    
-    left = joy_left.GetY() / 2.0F;
-    right = joy_right.GetY() / 2.0F;
-    drive.TankDrive( left, right );
-    SmartDashboard::Log( left, "Left");
-    SmartDashboard::Log( right, "Right" );
-    
-    // analog input 1
-    trigger = ( DriverStation::GetInstance()->GetAnalogIn(1) < 0.5F );
-    arm.Set( trigger );
-    SmartDashboard::Log( trigger, "Arm" );
+    float rightX = joy_right.GetX();
+    float rightY = joy_right.GetY();
+    float rightT = joy_right.GetTwist();
+    bool rightTrigger = joy_right.GetTrigger();
+    bool rightTop = joy_right.GetTop();
+    float leftY = joy_left.GetY();
 
-    // grab/release digital input 6
-    
-    trigger = DriverStation::GetInstance()->GetDigitalIn( 6 );
-    grabber.Set( trigger );
-    SmartDashboard::Log( trigger, "Grabber" );
-    
-    // gun digital input 1
-    
-    trigger = ! DriverStation::GetInstance()->GetDigitalIn( 1 );
-    gun.Set( trigger ? Relay::kOn : Relay::kOff );
-    SmartDashboard::Log( trigger, "Grabber" );
-    
-    m_watchdog.Feed();
+    if (rightTop) {
+	balance.Start( 0.5F, false );
+    } else {
+	balance.Stop();
+	if (rightTrigger) {
+	    rightX /= 3.0;
+	    rightY /= 3.0;
+	    leftY /= 3.0;
+	}
+
+	switch (driveMode) {
+	case kFlightStick:
+	    drive.ArcadeDrive( rightY, rightT, true );
+	    break;
+	case kArcade:
+	    drive.ArcadeDrive( rightY, rightX, true );
+	    break;
+	case kTwoStick:
+	    drive.TankDrive( rightY, leftY );
+	    break;
+	}
+    }
 }
 
 void MyRobot::TeleopContinuous()
 {
-    taskDelay(1);		// be nice to other tasks
+    balance.Run();
 }
