@@ -26,6 +26,8 @@ MyRobot::MyRobot() :
     driveChooser.AddObject("Arcade",       (void *) kArcade);
     driveChooser.AddObject("TwoStick",     (void *) kTwoStick);
     SmartDashboard::GetInstance()->PutData("Drive", &driveChooser);
+
+    printf("File Versions:\n%s\n", Version::GetVersions());
 }
 
 void MyRobot::RobotInit()
@@ -34,7 +36,6 @@ void MyRobot::RobotInit()
     drive.StopMotor();
 
     SmartDashboard::Log("Initialized", "Robot State");
-    SmartDashboard::Log( Version::GetVersions(), "File Versions" );
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Initialized");
