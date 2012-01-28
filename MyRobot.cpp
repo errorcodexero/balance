@@ -11,7 +11,6 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-
     driveChooser(),
     driveMode(kFlightStick),
     joy_left( 1 ),	// driver station left-hand joystick on USB port 1
@@ -34,13 +33,21 @@ void MyRobot::RobotInit()
 {
     balance.Stop();
     drive.StopMotor();
+    // RobotDrive assumes all possible motors are inverted at start.
+    // Change that to match our drive platform.  Setting all four
+    // motors even though we only have two on this platform avoids
+    // our having to have special knowledge about whether our two
+    // motors are the "front" or "rear" outputs.
+    drive.SetInvertedMotor( RobotDrive::kFrontLeftMotor, false );
+    drive.SetInvertedMotor( RobotDrive::kFrontRightMotor, false );
+    drive.SetInvertedMotor( RobotDrive::kRearLeftMotor, false );
+    drive.SetInvertedMotor( RobotDrive::kRearRightMotor, false );
 
     SmartDashboard::Log("Initialized", "Robot State");
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Initialized");
     lcd->UpdateLCD();
-
 }
 
 START_ROBOT_CLASS(MyRobot);
