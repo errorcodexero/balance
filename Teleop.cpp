@@ -34,16 +34,16 @@ void MyRobot::TeleopPeriodic()
     float leftY = joy_left.GetY();
 
     if (rightTop) {
-	balance.Start( -0.30F, false );
+	balance.Start( false, false );
     } else {
 	balance.Stop();
 
 	switch (driveMode) {
 	case kFlightStick:
-	    drive.ArcadeDrive( rightY, rightT, rightTrigger );
+	    drive.ArcadeDrive( rightY, rightT / 2.0F, !rightTrigger );
 	    break;
 	case kArcade:
-	    drive.ArcadeDrive( rightY, rightX, rightTrigger );
+	    drive.ArcadeDrive( rightY, rightX / 2.0F, !rightTrigger );
 	    break;
 	case kTwoStick:
 	    drive.TankDrive( rightY, leftY );

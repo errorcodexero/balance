@@ -12,16 +12,32 @@ private:
     RobotDrive& drive;
     AnalogChannel& gyro;
 
-    INT16 level;
-    float speed;
-    bool isOnRamp;
-    bool isBalanced;
+    // operating parameters configured from preferences/SmartDashboard
+    float approach_speed;
+    float ramp_speed;
+    float brake_speed;
+    INT16 tilt_up;
+    INT16 tilt_down;
+    UINT32 brake_time;
+
+    // runtime state
+    INT16 level;		// average gyro output when stopped
+    INT16 tilt_min, tilt_max;	// instrumentation for debugging
+    bool started;		// are we in control?
+    enum { kApproach, kOnRamp, kBraking, kBalanced } state; // operating state
+    bool reverse;		// running in reverse
+    float speed;		// current motor speed
+    UINT32 when;		// timestamp for braking
+
+    void InitBalance();
 
 public:
     Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro );
     ~Balance();
 
-    void Start( float initialSpeed, bool startOnRamp );
+    void SavePreferences();
+
+    void Start( bool reverse, bool startOnRamp );
     void Stop();
 
     void Run();
@@ -29,6 +45,7 @@ public:
     float GetSpeed();
     bool IsRunning();
     bool IsOnRamp();
+    bool IsBraking();
     bool IsBalanced();
 };
 
