@@ -35,8 +35,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	RAMP_SPEED	0.5F
 #define	BRAKE_SPEED	-0.1F
 
-#define	TILT_UP		30
-#define	TILT_DOWN	-30
+#define	TILT_UP		40
+#define	TILT_DOWN	-20
 #define	BRAKE_TIME	50		// milliseconds
 
 // defaults from WPILib AnalogModule class:
@@ -61,21 +61,52 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     level( 512 ), // nominal 2.5V
     tilt_min( 0 ),
     tilt_max( 0 ),
-    started( false ),
+    running( false ),
     state( kApproach ),
     reverse( false ),
     speed( 0.0F ),
     when( 0UL )
 {
-    // gyro.SetAverageBits( AnalogModule::kDefaultAverageBits );
-    // gyro.SetOversampleBits( AnalogModule::kDefaultOversampleBits );
-    // gyro.GetModule()->SetSampleRate( AnalogModule::kDefaultSampleRate );
+    Preferences *pref = Preferences::GetInstance();
+    bool saveNeeded = false;
+    
+    if (!pref->ContainsKey( "Balance.approach_speed" )) {
+	pref->PutDouble( "Balance.approach_speed", APPROACH_SPEED );
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Balance.ramp_speed" )) {
+	pref->PutDouble( "Balance.ramp_speed", RAMP_SPEED );
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Balance.brake_speed" )) {
+	pref->PutDouble( "Balance.brake_speed", BRAKE_SPEED );
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Balance.tilt_up" )) {
+	pref->PutInt( "Balance.tilt_up", TILT_UP );
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Balance.tilt_down" )) {
+	pref->PutInt( "Balance.tilt_down", TILT_DOWN );
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Balance.brake_time" )) {
+	// timer in microseconds, preference value in milliseconds
+	pref->PutInt( "Balance.brake_time", (int) (BRAKE_TIME / 1000UL) );
+	saveNeeded = true;
+    }
+    if (saveNeeded) {
+	pref->Save();
+    }
+
+    InitBalance();
 }
 
 Balance::~Balance()
 {
     drive.Drive( 0.0F, 0.0F );
 }
+
 
 void Balance::InitBalance()
 {
@@ -89,26 +120,26 @@ void Balance::InitBalance()
     tilt_down      = pref->GetInt( "Balance.tilt_down", TILT_DOWN );
 
     // timer in microseconds, preference value in milliseconds
-    brake_time     = pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
-}
+    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
 
-void Balance::SavePreferences()
-{
-    InitBalance();
+    // read the gyro's averaged output before we start moving
+    // in order to compensate for various offset voltages and drift
 
-    Preferences *pref = Preferences::GetInstance();
+    // gyro.SetAverageBits( AnalogModule::kDefaultAverageBits );
+    // gyro.SetOversampleBits( AnalogModule::kDefaultOversampleBits );
+    // gyro.GetModule()->SetSampleRate( AnalogModule::kDefaultSampleRate );
 
-    pref->PutDouble( "Balance.approach_speed", approach_speed );
-    pref->PutDouble( "Balance.ramp_speed",     ramp_speed     );
-    pref->PutDouble( "Balance.brake_speed",    brake_speed    );
+    level = gyro.GetAverageValue();
+    SmartDashboard::Log( level,  "Balance.level" );
 
-    pref->PutInt( "Balance.tilt_up",   tilt_up   );
-    pref->PutInt( "Balance.tilt_down", tilt_down );
+    tilt_max = 0;
+    SmartDashboard::Log( tilt_max,  "Balance.tilt_max" );
 
-    // timer in microseconds, preference value in milliseconds
-    pref->PutInt( "Balance.brake_time", (int) (brake_time / 1000UL) );
+    tilt_min = 0;
+    SmartDashboard::Log( tilt_min,  "Balance.tilt_min" );
 
-    pref->Save();
+    speed = 0.0F;
+    SmartDashboard::Log( speed, "Balance.speed" );
 }
 
 void Balance::Start( bool startReverse, bool startOnRamp )
@@ -119,18 +150,7 @@ void Balance::Start( bool startReverse, bool startOnRamp )
     // load configuration from preferences file or SmartDashboard
     InitBalance();
 
-    // read the gyro's averaged output before we start moving
-    // in order to compensate for various offset voltages and drift
-    level = gyro.GetAverageValue();
-    SmartDashboard::Log( level,  "Balance.level" );
-
-    tilt_max = 0;
-    SmartDashboard::Log( tilt_max,  "Balance.tilt_max" );
-    tilt_min = 0;
-    SmartDashboard::Log( tilt_min,  "Balance.tilt_min" );
-
     // set the initial speed and position
-    reverse = startReverse;
     if (startOnRamp) {
 	state = kOnRamp;
 	SmartDashboard::Log( "onRamp",  "Balance.state" );
@@ -142,15 +162,16 @@ void Balance::Start( bool startReverse, bool startOnRamp )
 	speed = approach_speed;
 	SmartDashboard::Log( speed,  "Balance.speed" );
     }
+    reverse = startReverse;
 
     // start moving
-    started = true;
+    running = true;
     Run();
 }
 
 void Balance::Stop()
 {
-    started = false;
+    running = false;
     speed = 0.0;
     SmartDashboard::Log( speed,  "Balance.speed" );
     drive.Drive( 0.0F, 0.0F );
@@ -158,24 +179,27 @@ void Balance::Stop()
 
 void Balance::Run()
 {
+    INT16 rotation = gyro.GetAverageValue();
+    INT16 tilt;
+
+    // assume gyro is mounted so a "tilt up" rotation is positive when moving forward
+    if (reverse) {
+	tilt = (level - rotation);
+    } else {
+	tilt = (rotation - level);
+    }
+
+    // log min and max values for debugging
+    if (tilt < tilt_min) {
+	tilt_min = tilt;
+	SmartDashboard::Log( tilt, "Balance.tilt_min" );
+    }
+    if (tilt > tilt_max) {
+	tilt_max = tilt;
+	SmartDashboard::Log( tilt, "Balance.tilt_max" );
+    }
+
     if (IsRunning()) {
-	INT16 rotation = gyro.GetAverageValue();
-	INT16 tilt;
-	// assume gyro is mounted so a "tilt up" rotation is positive when moving forward
-	if (reverse) {
-	    tilt = (level - rotation);
-	} else {
-	    tilt = (rotation - level);
-	}
-	// log min and max values for debugging
-	if (tilt < tilt_min) {
-	    tilt_min = tilt;
-	    SmartDashboard::Log( tilt, "Balance.tilt_min" );
-	}
-	if (tilt > tilt_max) {
-	    tilt_max = tilt;
-	    SmartDashboard::Log( tilt, "Balance.tilt_max" );
-	}
 	// approaching the ramp
 	if (state == kApproach) {
 	    if (tilt > tilt_up) {
@@ -199,8 +223,8 @@ void Balance::Run()
 	    }
 	}
 	// else balanced; nothing to do here
+	drive.Drive( reverse ? -speed : speed, 0.0F );
     }
-    drive.Drive( reverse ? -speed : speed, 0.0F );
 }
 
 float Balance::GetSpeed()
@@ -210,7 +234,7 @@ float Balance::GetSpeed()
 
 bool Balance::IsRunning()
 {
-    return (started);
+    return (running);
 }
 
 bool Balance::IsOnRamp()

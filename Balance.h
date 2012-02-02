@@ -23,7 +23,7 @@ private:
     // runtime state
     INT16 level;		// average gyro output when stopped
     INT16 tilt_min, tilt_max;	// instrumentation for debugging
-    bool started;		// are we in control?
+    bool running;		// are we in control?
     enum { kApproach, kOnRamp, kBraking, kBalanced } state; // operating state
     bool reverse;		// running in reverse
     float speed;		// current motor speed
@@ -34,8 +34,6 @@ private:
 public:
     Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro );
     ~Balance();
-
-    void SavePreferences();
 
     void Start( bool reverse, bool startOnRamp );
     void Stop();

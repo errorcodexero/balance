@@ -13,7 +13,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::TeleopInit()
 {
     balance.Stop();
-    drive.StopMotor();
+    drive.Drive( 0.0F, 0.0F );
+    drive.SetSafetyEnabled(true);
     
     SmartDashboard::Log("Teleop", "Robot State");
 
@@ -26,29 +27,31 @@ void MyRobot::TeleopInit()
 
 void MyRobot::TeleopPeriodic()
 {
-    float rightX = joy_right.GetX();
-    float rightY = joy_right.GetY();
-    float rightT = joy_right.GetTwist();
+    float rightX = -joy_right.GetX();
+    float rightY = -joy_right.GetY();
+    float rightT = -joy_right.GetTwist();
     bool rightTrigger = joy_right.GetTrigger();
     bool rightTop = joy_right.GetTop();
-    float leftY = joy_left.GetY();
+    float leftY = -joy_left.GetY();
 
     if (rightTop) {
-	balance.Start( false, false );
+    	balance.Start( false, false );
     } else {
-	balance.Stop();
+    	balance.Stop();
 
-	switch (driveMode) {
-	case kFlightStick:
-	    drive.ArcadeDrive( rightY, rightT / 2.0F, !rightTrigger );
-	    break;
-	case kArcade:
-	    drive.ArcadeDrive( rightY, rightX / 2.0F, !rightTrigger );
-	    break;
-	case kTwoStick:
-	    drive.TankDrive( rightY, leftY );
-	    break;
-	}
+    	drive.ArcadeDrive( rightY, rightT / 2.0F, !rightTrigger );
+
+    	switch (driveMode) {
+    	case kFlightStick:
+    		drive.ArcadeDrive( rightY, rightT / 2.0F, !rightTrigger );
+    		break;
+    	case kArcade:
+    		drive.ArcadeDrive( rightY, rightX / 2.0F, !rightTrigger );
+    		break;
+    	case kTwoStick:
+    		drive.TankDrive( rightY, leftY );
+    		break;
+    	}
     }
 }
 

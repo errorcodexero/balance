@@ -13,7 +13,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::AutonomousInit()
 {
     balance.Stop();
-    drive.StopMotor();
+    drive.StopMotor();	// safer than Drive(0.0F, 0.0F) if PWM outputs aren't properly centered
+    drive.SetSafetyEnabled(false);
     
     SmartDashboard::Log("Autonomous", "Robot State");
 
