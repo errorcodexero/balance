@@ -37,7 +37,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 #define	TILT_UP		40
 #define	TILT_DOWN	-20
-#define	BRAKE_TIME	50		// milliseconds
+#define	RAMP_TIME	100000UL	// microseconds
+#define	BRAKE_TIME	50000UL		// microseconds
 
 // defaults from WPILib AnalogModule class:
 // static const long  kDefaultAverageBits    = 7
@@ -57,6 +58,7 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     brake_speed( BRAKE_SPEED ),
     tilt_up( TILT_UP ),
     tilt_down( TILT_DOWN ),
+    ramp_time( RAMP_TIME ),
     brake_time( BRAKE_TIME ),
     level( 512 ), // nominal 2.5V
     tilt_min( 0 ),
@@ -90,6 +92,11 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
 	pref->PutInt( "Balance.tilt_down", TILT_DOWN );
 	saveNeeded = true;
     }
+    if (!pref->ContainsKey( "Balance.ramp_time" )) {
+	// timer in microseconds, preference value in milliseconds
+	pref->PutInt( "Balance.ramp_time", (int) (RAMP_TIME / 1000UL) );
+	saveNeeded = true;
+    }
     if (!pref->ContainsKey( "Balance.brake_time" )) {
 	// timer in microseconds, preference value in milliseconds
 	pref->PutInt( "Balance.brake_time", (int) (BRAKE_TIME / 1000UL) );
@@ -120,6 +127,7 @@ void Balance::InitBalance()
     tilt_down      = pref->GetInt( "Balance.tilt_down", TILT_DOWN );
 
     // timer in microseconds, preference value in milliseconds
+    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",   RAMP_TIME ) * 1000UL;
     brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
 
     // read the gyro's averaged output before we start moving
@@ -208,16 +216,17 @@ void Balance::Run()
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
 		SmartDashboard::Log( "onRamp",  "Balance.state" );
-		speed = RAMP_SPEED;
+		speed = ramp_speed;
+		when = GetFPGATime() + ramp_time;
 	    }
 	}
 	// climbing the ramp
 	if (state == kOnRamp) {
-	    if (tilt < tilt_down) {
+	    if (((INT32)(GetFPGATime() - when) > 0) && (tilt < tilt_down)) {
 		state = kBraking;
 		SmartDashboard::Log( "braking",  "Balance.state" );
 		speed = brake_speed;
-		when = GetFPGATime() + BRAKE_TIME;
+		when = GetFPGATime() + brake_time;
 	    }
 	}
 	// braking

@@ -18,6 +18,7 @@ private:
     float brake_speed;
     INT16 tilt_up;
     INT16 tilt_down;
+    UINT32 ramp_time;
     UINT32 brake_time;
 
     // runtime state
