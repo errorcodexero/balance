@@ -62,7 +62,7 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     tilt_min( 0 ),
     tilt_max( 0 ),
     running( false ),
-    state( kApproach ),
+    state( kInitialized ),
     reverse( false ),
     speed( 0.0F ),
     when( 0UL )
@@ -140,6 +140,9 @@ void Balance::InitBalance()
 
     speed = 0.0F;
     SmartDashboard::Log( speed, "Balance.speed" );
+
+    state = kInitialized;
+    SmartDashboard::Log( "initialized", "Balance.state" );
 }
 
 void Balance::Start( bool startReverse, bool startOnRamp )
@@ -204,6 +207,7 @@ void Balance::Run()
 	if (state == kApproach) {
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
+		SmartDashboard::Log( "onRamp",  "Balance.state" );
 		speed = RAMP_SPEED;
 	    }
 	}
@@ -211,6 +215,7 @@ void Balance::Run()
 	if (state == kOnRamp) {
 	    if (tilt < tilt_down) {
 		state = kBraking;
+		SmartDashboard::Log( "braking",  "Balance.state" );
 		speed = brake_speed;
 		when = GetFPGATime() + BRAKE_TIME;
 	    }
@@ -219,6 +224,7 @@ void Balance::Run()
 	if (state == kBraking) {
 	    if ((INT32)(GetFPGATime() - when) > 0) {
 		state = kBalanced; // or so we hope
+		SmartDashboard::Log( "balanced",  "Balance.state" );
 		speed = 0.0F;
 	    }
 	}
