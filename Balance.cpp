@@ -127,8 +127,8 @@ void Balance::InitBalance()
     tilt_down      = pref->GetInt( "Balance.tilt_down", TILT_DOWN );
 
     // timer in microseconds, preference value in milliseconds
-    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",   RAMP_TIME ) * 1000UL;
-    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
+    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",  (int) ( RAMP_TIME / 1000UL) ) * 1000UL;
+    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", (int) (BRAKE_TIME / 1000UL) ) * 1000UL;
 
     // read the gyro's averaged output before we start moving
     // in order to compensate for various offset voltages and drift
