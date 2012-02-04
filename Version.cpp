@@ -21,8 +21,8 @@ void Version::AddVersion( const char *ver )
     } else {
 	len += strlen(fileVersions) + 1;
 	fileVersions = (char *) realloc(fileVersions, len);
-	strcat(fileVersions, "\n");
 	strcat(fileVersions, ver);
+	strcat(fileVersions, "\n");
     }
 }
 

@@ -31,14 +31,14 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // a range of +/-10V with a 12-bit resolution, so a 0.42V signal is
 // (0.42V/20V)*4096 = 86 counts, which should be easily detectable.
 
-#define	APPROACH_SPEED	0.3F
-#define	RAMP_SPEED	0.5F
-#define	BRAKE_SPEED	-0.1F
+#define	APPROACH_SPEED	0.30F
+#define	RAMP_SPEED	0.30F
+#define	BRAKE_SPEED	-0.30F
 
-#define	TILT_UP		40
-#define	TILT_DOWN	-20
-#define	RAMP_TIME	100000UL	// microseconds
-#define	BRAKE_TIME	50000UL		// microseconds
+#define	TILT_UP		25
+#define	TILT_DOWN	-12
+#define	RAMP_TIME	1000	// milliseconds
+#define	BRAKE_TIME	225	// milliseconds
 
 // defaults from WPILib AnalogModule class:
 // static const long  kDefaultAverageBits    = 7
@@ -58,8 +58,8 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     brake_speed( BRAKE_SPEED ),
     tilt_up( TILT_UP ),
     tilt_down( TILT_DOWN ),
-    ramp_time( RAMP_TIME ),
-    brake_time( BRAKE_TIME ),
+    ramp_time( RAMP_TIME * 1000UL ),
+    brake_time( BRAKE_TIME * 1000UL ),
     level( 512 ), // nominal 2.5V
     tilt_min( 0 ),
     tilt_max( 0 ),
@@ -67,43 +67,52 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     state( kInitialized ),
     reverse( false ),
     speed( 0.0F ),
-    when( 0UL )
+    when( 0 )
 {
     Preferences *pref = Preferences::GetInstance();
     bool saveNeeded = false;
     
+    printf("In Balance constructor, pref = 0x%p\n", pref);
     if (!pref->ContainsKey( "Balance.approach_speed" )) {
 	pref->PutDouble( "Balance.approach_speed", APPROACH_SPEED );
+	printf("Preferences: save APPROACH_SPEED\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.ramp_speed" )) {
 	pref->PutDouble( "Balance.ramp_speed", RAMP_SPEED );
+	printf("Preferences: save RAMP_SPEED\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.brake_speed" )) {
 	pref->PutDouble( "Balance.brake_speed", BRAKE_SPEED );
+	printf("Preferences: save BRAKE_SPEED\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.tilt_up" )) {
 	pref->PutInt( "Balance.tilt_up", TILT_UP );
+	printf("Preferences: save TILT_UP\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.tilt_down" )) {
 	pref->PutInt( "Balance.tilt_down", TILT_DOWN );
+	printf("Preferences: save TILT_DOWN\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.ramp_time" )) {
 	// timer in microseconds, preference value in milliseconds
-	pref->PutInt( "Balance.ramp_time", (int) (RAMP_TIME / 1000UL) );
+	pref->PutInt( "Balance.ramp_time", RAMP_TIME );
+	printf("Preferences: save RAMP_TIME\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.brake_time" )) {
 	// timer in microseconds, preference value in milliseconds
-	pref->PutInt( "Balance.brake_time", (int) (BRAKE_TIME / 1000UL) );
+	pref->PutInt( "Balance.brake_time", BRAKE_TIME );
+	printf("Preferences: save BRAKE_TIME\n");
 	saveNeeded = true;
     }
     if (saveNeeded) {
 	pref->Save();
+	printf("Preferences: saved\n");
     }
 
     InitBalance();
@@ -123,12 +132,22 @@ void Balance::InitBalance()
     ramp_speed     = pref->GetDouble( "Balance.ramp_speed",     RAMP_SPEED     );
     brake_speed    = pref->GetDouble( "Balance.brake_speed",    BRAKE_SPEED    );
 
+    printf("InitBalance: approach_speed = %f\n", approach_speed);
+    printf("InitBalance: ramp_speed = %f\n", ramp_speed);
+    printf("InitBalance: brake_speed = %f\n", brake_speed);
+
     tilt_up        = pref->GetInt( "Balance.tilt_up",   TILT_UP   );
     tilt_down      = pref->GetInt( "Balance.tilt_down", TILT_DOWN );
 
+    printf("InitBalance: tilt_up = %d\n", tilt_up);
+    printf("InitBalance: tilt_down = %d\n", tilt_down);
+
     // timer in microseconds, preference value in milliseconds
-    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",  (int) ( RAMP_TIME / 1000UL) ) * 1000UL;
-    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", (int) (BRAKE_TIME / 1000UL) ) * 1000UL;
+    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",   RAMP_TIME ) * 1000UL;
+    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
+
+    printf("InitBalance: ramp_time = %lu\n", (unsigned long) ramp_time);
+    printf("InitBalance: brake_time = %lu\n", (unsigned long) brake_time);
 
     // read the gyro's averaged output before we start moving
     // in order to compensate for various offset voltages and drift
@@ -193,11 +212,11 @@ void Balance::Run()
     INT16 rotation = gyro.GetAverageValue();
     INT16 tilt;
 
-    // assume gyro is mounted so a "tilt up" rotation is positive when moving forward
+    // assume gyro is mounted so a "tilt up" rotation is negative when moving forward
     if (reverse) {
-	tilt = (level - rotation);
-    } else {
 	tilt = (rotation - level);
+    } else {
+	tilt = (level - rotation);
     }
 
     // log min and max values for debugging
@@ -213,27 +232,33 @@ void Balance::Run()
     if (IsRunning()) {
 	// approaching the ramp
 	if (state == kApproach) {
+	    printf("kApproach: tilt %d\n", tilt);
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
 		SmartDashboard::Log( "onRamp",  "Balance.state" );
 		speed = ramp_speed;
-		when = GetFPGATime() + ramp_time;
+		when = (long)(GetFPGATime() + ramp_time);
 	    }
 	}
 	// climbing the ramp
 	if (state == kOnRamp) {
-	    if (((INT32)(GetFPGATime() - when) > 0) && (tilt < tilt_down)) {
+	    long timeleft = when - (long) GetFPGATime();
+	    printf("kOnRamp: tilt %d time %ld\n", tilt, timeleft);
+	    if ((timeleft <= 0) && (tilt < tilt_down)) {
 		state = kBraking;
 		SmartDashboard::Log( "braking",  "Balance.state" );
 		speed = brake_speed;
-		when = GetFPGATime() + brake_time;
+		when = (long)(GetFPGATime() + brake_time);
 	    }
 	}
 	// braking
 	if (state == kBraking) {
-	    if ((INT32)(GetFPGATime() - when) > 0) {
+	    long timeleft = when - (long) GetFPGATime();
+	    printf("kBraking: tilt %d time %ld\n", tilt, timeleft);
+	    if (timeleft <= 0) {
 		state = kBalanced; // or so we hope
 		SmartDashboard::Log( "balanced",  "Balance.state" );
+		printf("kBalanced\n");
 		speed = 0.0F;
 	    }
 	}

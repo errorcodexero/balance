@@ -28,7 +28,7 @@ private:
     enum { kInitialized, kApproach, kOnRamp, kBraking, kBalanced } state; // operating state
     bool reverse;		// running in reverse
     float speed;		// current motor speed
-    UINT32 when;		// timestamp for braking   
+    long when;			// timestamp for braking   
 
 public:
     Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro );

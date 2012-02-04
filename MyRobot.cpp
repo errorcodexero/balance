@@ -31,9 +31,9 @@ MyRobot::MyRobot() :
 
 void MyRobot::RobotInit()
 {
-    balance.Stop();
     drive.Drive(0.0F, 0.0F);
     drive.SetSafetyEnabled(false);
+    balance.InitBalance();
 
     drive.SetInvertedMotor( RobotDrive::kFrontLeftMotor,  true );
     drive.SetInvertedMotor( RobotDrive::kFrontRightMotor, true );
