@@ -16,6 +16,10 @@ public:
 
     void RobotInit();
 
+    void DisableMotors();
+    void EnableVoltageControl();
+    void EnableSpeedControl();
+
     void DisabledInit();
     void AutonomousInit();
     void TeleopInit();
@@ -29,17 +33,20 @@ public:
     void TeleopContinuous();
 
 private:
+    static void DisableMotor( CANJaguar& motor );
+    static void EnableVoltageControl( CANJaguar& motor );
+    static void EnableSpeedControl( CANJaguar& motor );
+
     // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
     SendableChooser driveChooser;
     DriveType driveMode;
 
     // driver station inputs
-    Joystick joy_left,
-    	     joy_right;
+    Joystick joy_right, joy_left;
 
     // robot outputs
-    Victor motor_left,
-    	   motor_right;
+    CANJaguar motor_right_1, motor_right_2,
+	      motor_left_1, motor_left_2;
 
     // robot control
     RobotDrive drive;

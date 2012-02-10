@@ -14,8 +14,7 @@ void MyRobot::TeleopInit()
 {
     balance.Stop();
     balance.InitBalance();
-    drive.Drive( 0.0F, 0.0F );
-    drive.SetSafetyEnabled(true);
+    EnableSpeedControl();
     
     SmartDashboard::Log("Teleop", "Robot State");
 
