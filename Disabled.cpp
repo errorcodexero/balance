@@ -1,13 +1,9 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 25-Jan-2012
+// Steve Tarr - team 1425 mentor - 11-Feb-2012
 
-// WPILib Includes
-#include "IterativeRobot.h"
-
-// Our Includes
+#include <WPILib.h>
 #include "MyRobot.h"
 #include "Version.h"
-
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::DisabledInit()

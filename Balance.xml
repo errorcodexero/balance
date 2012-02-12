@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<dashboard>
+	<widget field="Right Top" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="203" y="111"/>
+	</widget>
+	<widget field="Right Trigger" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="186" y="83"/>
+	</widget>
+	<widget field="Right Twist" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="197" y="56"/>
+	</widget>
+	<widget field="Right X" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="219" y="31"/>
+	</widget>
+	<widget field="Right Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="219" y="6"/>
+	</widget>
+	<widget field="Left Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="35" y="3"/>
+	</widget>
+	<widget field="Robot State" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="2" y="33"/>
+	</widget>
+	<widget field="Right2 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="199" y="251"/>
+	</widget>
+	<widget field="Right2" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="219" y="221"/>
+	</widget>
+	<widget field="Right1 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="199" y="190"/>
+	</widget>
+	<widget field="Right1" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="219" y="162"/>
+	</widget>
+	<widget field="Left2 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="16" y="252"/>
+	</widget>
+	<widget field="Left2" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="36" y="222"/>
+	</widget>
+	<widget field="Left1 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="17" y="190"/>
+	</widget>
+	<widget field="Left1" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="32" y="160"/>
+	</widget>
+	<widget field="Drive" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
+		<location x="393" y="2"/>
+	</widget>
+	<widget field="Control" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
+		<location x="484" y="2"/>
+	</widget>
+	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
+		<location x="0" y="0"/>
+	</static-widget>
+	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
+		<location x="0" y="0"/>
+	</static-widget>
+	<hidden field="Joystick Twist"/>
+	<hidden field="RF"/>
+	<hidden field="Balance.level"/>
+	<hidden field="Balance.tilt_max"/>
+	<hidden field="Joystick Trigger"/>
+	<hidden field="stickToggle"/>
+	<hidden field="LR"/>
+	<hidden field="Right Power"/>
+	<hidden field="LF current"/>
+	<hidden field="RR"/>
+	<hidden field="LF voltage"/>
+	<hidden field="Joystick Y"/>
+	<hidden field="Joystick X"/>
+	<hidden field="Left Power"/>
+	<hidden field="LF speed"/>
+	<hidden field="Balance.tilt_min"/>
+	<hidden field="Joystick2 Y"/>
+	<hidden field="Joystick2 X"/>
+	<hidden field="Balance.speed"/>
+	<hidden field="Camera_X"/>
+	<hidden field="Balance.state"/>
+	<hidden field="Camera_Y"/>
+	<hidden field="LF"/>
+</dashboard>

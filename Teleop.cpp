@@ -1,24 +1,23 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 25-Jan-2012
+// Steve Tarr - team 1425 mentor - 11-Feb-2012
 
-// WPILib Includes
-#include "IterativeRobot.h"
-
-// Our Includes
+#include <WPILib.h>
 #include "MyRobot.h"
 #include "Version.h"
-
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::TeleopInit()
 {
-    balance.Stop();
-    balance.InitBalance();
-    EnableSpeedControl();
-    
     SmartDashboard::Log("Teleop", "Robot State");
 
+    balance.Stop();
+    balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
+    controlMode = (ControlMode) (int) controlChooser.GetSelected();
+    if (controlMode == kSpeed)
+	EnableSpeedControl();
+    else
+	EnableVoltageControl();
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Teleop Mode");
@@ -30,12 +29,14 @@ void MyRobot::TeleopPeriodic()
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);
     } else {
-	float rightX = -joy_right.GetX();
+	// invert axes of both joysticks so that
+	// positive is forward motion or left turn
+	float leftY  = -joy_left.GetY();
 	float rightY = -joy_right.GetY();
+	float rightX = -joy_right.GetX();
 	float rightT = -joy_right.GetTwist();
 	bool rightTrigger = joy_right.GetTrigger();
-	bool rightTop = joy_right.GetTop();
-	float leftY = -joy_left.GetY();
+	bool rightTop     = joy_right.GetTop();
 
 	if (rightTop) {
 	    balance.Start( false, false );
@@ -44,10 +45,10 @@ void MyRobot::TeleopPeriodic()
 	    balance.Stop();
 	    switch (driveMode) {
 	    case kFlightStick:
-		    drive.ArcadeDrive( rightY, rightT / 2.0F, !rightTrigger );
+		    drive.ArcadeDrive( rightY, rightT, !rightTrigger );
 		    break;
 	    case kArcade:
-		    drive.ArcadeDrive( rightY, rightX / 2.0F, !rightTrigger );
+		    drive.ArcadeDrive( rightY, rightX, !rightTrigger );
 		    break;
 	    case kTwoStick:
 		    drive.TankDrive( rightY, leftY );

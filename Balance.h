@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 25-Jan-2012
+// Steve Tarr - team 1425 mentor - 11-Feb-2012
 
 #ifndef _BALANCE_H_
 #define _BALANCE_H_
