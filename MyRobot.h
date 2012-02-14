@@ -6,7 +6,6 @@
 
 #include <WPILib.h>
 #include "Balance.h"
-#include "Smart.h"
 
 class MyRobot : public IterativeRobot
 {
@@ -46,10 +45,10 @@ private:
     ControlMode controlMode;
 
     // driver station inputs
-    SmartJoystick joy_right, joy_left;
+    Joystick joy_right, joy_left;
 
     // robot outputs
-    SmartCANJaguar motor_right_1, motor_right_2,
+    CANJaguar motor_right_1, motor_right_2,
 		   motor_left_1, motor_left_2;
 
     // robot control
