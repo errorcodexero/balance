@@ -11,9 +11,6 @@
 class MyRobot : public IterativeRobot
 {
 public:
-    typedef enum { kFlightStick, kArcade, kXY, kTwoStick } DriveType;
-    typedef enum { kVoltage, kSpeed } ControlMode;
-
     MyRobot();
 
     void RobotInit();
@@ -36,32 +33,70 @@ public:
     void TeleopContinuous();
 
 private:
-    static void DisableMotor( CANJaguar& motor );
-    static void EnableVoltageControl( CANJaguar& motor );
-    static void EnableSpeedControl( CANJaguar& motor );
-    static void EnablePositionControl( CANJaguar& motor );
-
-    // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
-    SendableChooser driveChooser;
-    DriveType driveMode;
-    SendableChooser controlChooser;
-    ControlMode controlMode;
+    ///////////////////////////////////////////////////////////////////
+    // driver station
+    ///////////////////////////////////////////////////////////////////
 
     // driver station inputs
     SmartJoystick joy_right, joy_left;
 
-    // robot outputs
+    ///////////////////////////////////////////////////////////////////
+    // cRIO inputs and outputs
+    ///////////////////////////////////////////////////////////////////
+
+    // motor controllers
     CANJaguar motor_right_1, motor_right_2,
 		   motor_left_1, motor_left_2;
 
-    // robot control
-    RobotDrive drive;
+    // Gyro (rate of pitch/yaw) inputs
+    AnalogChannel pitch, yaw;
 
-    // Gyro (rate of tilt sensor) input
-    AnalogChannel tilt;
+    // Compressor (control and sensor)
+    Compressor compressor;
+
+    // Cow-catcher control
+    DoubleSolenoid catcher;
+
+    // Ball picker-upper motor, bidirectional
+    Relay upper;
+
+    // Ball injector
+    DoubleSolenoid injector;
+
+    // Shooter wheel
+    Victor shooter_1, shooter_2;
+    Counter speedy;
+
+    // Camera illuminator on/off
+    Relay illuminator;
+
+    ///////////////////////////////////////////////////////////////////
+    // robot control
+    ///////////////////////////////////////////////////////////////////
+
+    // dashboard controls
+    SendableChooser driveChooser;
+    typedef enum { kFlightStick, kArcade, kXY, kTwoStick } DriveType;
+    DriveType driveMode;
+
+    SendableChooser controlChooser;
+    typedef enum { kVoltage, kSpeed } ControlMode;
+    ControlMode controlMode;
+
+    // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
+    RobotDrive drive;
 
     // Bridge Balance Control
     Balance balance;
+
+    ///////////////////////////////////////////////////////////////////
+    // helper functions
+    ///////////////////////////////////////////////////////////////////
+
+    static void DisableMotor( CANJaguar& motor );
+    static void EnableVoltageControl( CANJaguar& motor );
+    static void EnableSpeedControl( CANJaguar& motor );
+    static void EnablePositionControl( CANJaguar& motor );
 };
 
 #endif // _MYROBOT_H_

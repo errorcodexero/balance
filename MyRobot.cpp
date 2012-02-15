@@ -7,19 +7,28 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-    driveChooser(),
-    driveMode(kFlightStick),
-    controlChooser(),
-    controlMode(kVoltage),
     joy_right( 1, "Right" ),
     joy_left(  2, "Left" ),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
     motor_left_2(  5 ),
+    pitch( 1 ),
+    yaw( 2 ),
+    compressor( 1, 1 ),
+    catcher( 1, 2 ),
+    upper( 2, Relay::kBothDirections ),
+    injector( 3, 4 ),
+    shooter_1( 1 ),
+    shooter_2( 2 ),
+    speedy( 2 ),
+    illuminator( 3, Relay::kForwardOnly ),
+    driveChooser(),
+    driveMode( kFlightStick ),
+    controlChooser(),
+    controlMode( kVoltage ),
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
-    tilt( 1 ),
-    balance( drive, tilt )
+    balance( drive, pitch )
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
 
@@ -104,7 +113,7 @@ void MyRobot::EnableSpeedControl()
     EnableSpeedControl( motor_right_2 );
 
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
-    drive.SetMaxOutput( 200 );			// 200 RPM
+    drive.SetMaxOutput( 200 );			// 200 RPM is somewhat slower than top speed
     drive.SetSafetyEnabled( true );
 }
 
@@ -116,7 +125,7 @@ void MyRobot::EnablePositionControl( CANJaguar& motor )
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
     motor.SetPID( 0.300, 0.003, 0.001 );	// TBD: change this for position
     motor.SetSafetyEnabled( true );
-    motor.EnableControl();
+    motor.EnableControl( 0.0 );
     motor.Set( 0.0F, 0 );
 }
 
@@ -128,7 +137,7 @@ void MyRobot::EnablePositionControl()
     EnablePositionControl( motor_right_2 );
 
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
-    drive.SetMaxOutput( 100 );			 // 100 revolutions or 100 counts?
+    drive.SetMaxOutput( 100 );			 // 100 revolutions?
     drive.SetSafetyEnabled( true );
 }
 

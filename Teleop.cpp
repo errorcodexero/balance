@@ -29,29 +29,34 @@ void MyRobot::TeleopPeriodic()
 	drive.Drive(0.0F, 0.0F);
     } else {
 	float leftY  = joy_left.GetY();
+	bool leftTrigger = joy_left.GetTrigger();
+	bool leftTop     = joy_left.GetTop();
+
 	float rightY = joy_right.GetY();
-	float rightX = - joy_right.GetX();
-	float rightT = - joy_right.GetTwist();
+	float rightX = joy_right.GetX();
+	float rightT = joy_right.GetTwist();
 	bool rightTrigger = joy_right.GetTrigger();
 	bool rightTop     = joy_right.GetTop();
 
 	if (rightTop) {
-	    balance.Start( false, false );
+	    if (!balance.IsRunning()) {
+		balance.Start( false, false );
+	    }
 	    balance.Run();
 	} else {
 	    balance.Stop();
 	    switch (driveMode) {
 	    case kFlightStick:
-		    drive.ArcadeDrive( rightY, rightT, !rightTrigger );
+		    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
 		    break;
 	    case kArcade:
-		    drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+		    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
 		    break;
 	    case kXY:
 		    if (rightY > 0.05) {
-			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-		    } else {
 			drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+		    } else {
+			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
 		    }
 		    break;
 	    case kTwoStick:

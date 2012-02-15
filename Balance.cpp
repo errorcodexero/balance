@@ -194,7 +194,6 @@ void Balance::Start( bool startReverse, bool startOnRamp )
 
     // start moving
     running = true;
-    Run();
 }
 
 void Balance::Stop()
