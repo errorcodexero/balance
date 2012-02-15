@@ -6,11 +6,12 @@
 
 #include <WPILib.h>
 #include "Balance.h"
+#include "Smart.h"
 
 class MyRobot : public IterativeRobot
 {
 public:
-    typedef enum { kFlightStick, kArcade, kTwoStick } DriveType;
+    typedef enum { kFlightStick, kArcade, kXY, kTwoStick } DriveType;
     typedef enum { kVoltage, kSpeed } ControlMode;
 
     MyRobot();
@@ -20,6 +21,7 @@ public:
     void DisableMotors();
     void EnableVoltageControl();
     void EnableSpeedControl();
+    void EnablePositionControl();
 
     void DisabledInit();
     void AutonomousInit();
@@ -37,6 +39,7 @@ private:
     static void DisableMotor( CANJaguar& motor );
     static void EnableVoltageControl( CANJaguar& motor );
     static void EnableSpeedControl( CANJaguar& motor );
+    static void EnablePositionControl( CANJaguar& motor );
 
     // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
     SendableChooser driveChooser;
@@ -45,7 +48,7 @@ private:
     ControlMode controlMode;
 
     // driver station inputs
-    Joystick joy_right, joy_left;
+    SmartJoystick joy_right, joy_left;
 
     // robot outputs
     CANJaguar motor_right_1, motor_right_2,

@@ -11,8 +11,8 @@ MyRobot::MyRobot() :
     driveMode(kFlightStick),
     controlChooser(),
     controlMode(kVoltage),
-    joy_right( 1 ),
-    joy_left(  2 ),
+    joy_right( 1, "Right" ),
+    joy_left(  2, "Left" ),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
@@ -25,6 +25,7 @@ MyRobot::MyRobot() :
 
     driveChooser.AddDefault("FlightStick", (void *) kFlightStick);
     driveChooser.AddObject("Arcade",       (void *) kArcade);
+    driveChooser.AddObject("X-Y",          (void *) kXY);
     driveChooser.AddObject("TwoStick",     (void *) kTwoStick);
     SmartDashboard::GetInstance()->PutData("Drive", &driveChooser);
 
@@ -36,8 +37,6 @@ MyRobot::MyRobot() :
 void MyRobot::RobotInit()
 {
     balance.InitBalance();
-    drive.Drive(0.0F, 0.0F);
-
     DisableMotors();
 
     SmartDashboard::Log("Initialized", "Robot State");
@@ -68,9 +67,9 @@ void MyRobot::EnableVoltageControl( CANJaguar& motor )
 {
     motor.ChangeControlMode( CANJaguar::kPercentVbus );
     motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Coast );
-    motor.Set( 0.0F, 0 );
+    motor.SetSafetyEnabled( true );
     motor.EnableControl();
-//  motor.SetSafetyEnabled( true );
+    motor.Set( 0.0F, 0 );
 }
 
 void MyRobot::EnableVoltageControl()
@@ -82,7 +81,7 @@ void MyRobot::EnableVoltageControl()
 
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
     drive.SetMaxOutput( 1.0 );	// 100% of Vbus
-//  drive.SetSafetyEnabled( true );
+    drive.SetSafetyEnabled( true );
 }
 
 void MyRobot::EnableSpeedControl( CANJaguar& motor )
@@ -92,9 +91,9 @@ void MyRobot::EnableSpeedControl( CANJaguar& motor )
     motor.SetSpeedReference( CANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );  // or 250, or 300?
     motor.SetPID( 0.300, 0.003, 0.001 );
-    motor.Set( 0.0F, 0 );
+    motor.SetSafetyEnabled( true );
     motor.EnableControl();
-//  motor.SetSafetyEnabled( true );
+    motor.Set( 0.0F, 0 );
 }
 
 void MyRobot::EnableSpeedControl()
@@ -105,8 +104,32 @@ void MyRobot::EnableSpeedControl()
     EnableSpeedControl( motor_right_2 );
 
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
-    drive.SetMaxOutput( 100 );  // 100 RPM
-//  drive.SetSafetyEnabled( true );
+    drive.SetMaxOutput( 200 );			// 200 RPM
+    drive.SetSafetyEnabled( true );
+}
+
+void MyRobot::EnablePositionControl( CANJaguar& motor )
+{
+    motor.ChangeControlMode( CANJaguar::kPosition );
+    motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Brake );
+    motor.SetPositionReference( CANJaguar::kPosRef_QuadEncoder );
+    motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
+    motor.SetPID( 0.300, 0.003, 0.001 );	// TBD: change this for position
+    motor.SetSafetyEnabled( true );
+    motor.EnableControl();
+    motor.Set( 0.0F, 0 );
+}
+
+void MyRobot::EnablePositionControl()
+{
+    EnablePositionControl( motor_left_1 );
+    EnablePositionControl( motor_right_1 );
+    EnablePositionControl( motor_left_2 );
+    EnablePositionControl( motor_right_2 );
+
+    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
+    drive.SetMaxOutput( 100 );			 // 100 revolutions or 100 counts?
+    drive.SetSafetyEnabled( true );
 }
 
 START_ROBOT_CLASS(MyRobot);

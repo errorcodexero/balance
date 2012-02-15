@@ -1,52 +1,66 @@
 <?xml version="1.0"?>
 <dashboard>
-	<widget field="Right Top" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="203" y="111"/>
+	<widget field="Balance.speed" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="60" y="188"/>
+		<property name="Maximum" value="-1"/>
 	</widget>
-	<widget field="Right Trigger" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="186" y="83"/>
+	<widget field="Balance.level" type="Integer" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="16" y="156"/>
 	</widget>
-	<widget field="Right Twist" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="197" y="56"/>
+	<widget field="Balance.state" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="14" y="125"/>
 	</widget>
-	<widget field="Right X" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="219" y="31"/>
+	<widget field="Left2" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="28" y="289"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
 	</widget>
-	<widget field="Right Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="219" y="6"/>
+	<widget field="Left1" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="29" y="234"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
 	</widget>
-	<widget field="Left Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+	<widget field="Right2" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="212" y="289"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
+	</widget>
+	<widget field="Right1" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="213" y="233"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
+	</widget>
+	<widget field="Right Top" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
+		<location x="33" y="89"/>
+	</widget>
+	<widget field="Right Trigger" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
+		<location x="105" y="90"/>
+	</widget>
+	<widget field="Left Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
 		<location x="35" y="3"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
+	</widget>
+	<widget field="Right Twist" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="218" y="75"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
+	</widget>
+	<widget field="Right X" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="219" y="39"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
+	</widget>
+	<widget field="Right Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
+		<location x="219" y="6"/>
+		<property name="Maximum" value="-1"/>
+		<property name="Minimum" value="1"/>
 	</widget>
 	<widget field="Robot State" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="2" y="33"/>
-	</widget>
-	<widget field="Right2 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="199" y="251"/>
-	</widget>
-	<widget field="Right2" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="219" y="221"/>
-	</widget>
-	<widget field="Right1 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="199" y="190"/>
-	</widget>
-	<widget field="Right1" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="219" y="162"/>
-	</widget>
-	<widget field="Left2 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="16" y="252"/>
-	</widget>
-	<widget field="Left2" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="36" y="222"/>
-	</widget>
-	<widget field="Left1 set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="17" y="190"/>
-	</widget>
-	<widget field="Left1" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="32" y="160"/>
+		<location x="4" y="44"/>
 	</widget>
 	<widget field="Drive" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
-		<location x="393" y="2"/>
+		<location x="389" y="1"/>
 	</widget>
 	<widget field="Control" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
 		<location x="484" y="2"/>
@@ -57,17 +71,23 @@
 	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
 		<location x="0" y="0"/>
 	</static-widget>
-	<hidden field="Joystick Twist"/>
+	<hidden field="Left1 set"/>
+	<hidden field="Left1.set"/>
 	<hidden field="RF"/>
-	<hidden field="Balance.level"/>
-	<hidden field="Balance.tilt_max"/>
+	<hidden field="Joystick Twist"/>
+	<hidden field="Right1 set"/>
 	<hidden field="Joystick Trigger"/>
-	<hidden field="stickToggle"/>
 	<hidden field="LR"/>
 	<hidden field="Right Power"/>
 	<hidden field="LF current"/>
-	<hidden field="RR"/>
+	<hidden field="Right2.set"/>
+	<hidden field="Right2 set"/>
+	<hidden field="Left2 set"/>
+	<hidden field="Balance.tilt_max"/>
+	<hidden field="Right1.set"/>
+	<hidden field="stickToggle"/>
 	<hidden field="LF voltage"/>
+	<hidden field="RR"/>
 	<hidden field="Joystick Y"/>
 	<hidden field="Joystick X"/>
 	<hidden field="Left Power"/>
@@ -75,9 +95,8 @@
 	<hidden field="Balance.tilt_min"/>
 	<hidden field="Joystick2 Y"/>
 	<hidden field="Joystick2 X"/>
-	<hidden field="Balance.speed"/>
+	<hidden field="Left2.set"/>
 	<hidden field="Camera_X"/>
-	<hidden field="Balance.state"/>
 	<hidden field="Camera_Y"/>
 	<hidden field="LF"/>
 </dashboard>

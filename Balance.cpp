@@ -166,6 +166,8 @@ void Balance::InitBalance()
 
     state = kInitialized;
     SmartDashboard::Log( "initialized", "Balance.state" );
+
+    running = false;
 }
 
 void Balance::Start( bool startReverse, bool startOnRamp )
@@ -259,7 +261,8 @@ void Balance::Run()
 	    }
 	}
 	// else balanced; nothing to do here
-	drive.Drive( reverse ? -speed : speed, 0.0F );
+
+	drive.Drive( reverse ? speed : -speed, 0.0F );
     }
 }
 

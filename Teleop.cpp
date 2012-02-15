@@ -8,9 +8,6 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::TeleopInit()
 {
-    SmartDashboard::Log("Teleop", "Robot State");
-
-    balance.Stop();
     balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
     controlMode = (ControlMode) (int) controlChooser.GetSelected();
@@ -18,6 +15,8 @@ void MyRobot::TeleopInit()
 	EnableSpeedControl();
     else
 	EnableVoltageControl();
+
+    SmartDashboard::Log("Teleop", "Robot State");
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Teleop Mode");
@@ -29,12 +28,10 @@ void MyRobot::TeleopPeriodic()
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);
     } else {
-	// invert axes of both joysticks so that
-	// positive is forward motion or left turn
-	float leftY  = -joy_left.GetY();
-	float rightY = -joy_right.GetY();
-	float rightX = -joy_right.GetX();
-	float rightT = -joy_right.GetTwist();
+	float leftY  = joy_left.GetY();
+	float rightY = joy_right.GetY();
+	float rightX = - joy_right.GetX();
+	float rightT = - joy_right.GetTwist();
 	bool rightTrigger = joy_right.GetTrigger();
 	bool rightTop     = joy_right.GetTop();
 
@@ -50,12 +47,24 @@ void MyRobot::TeleopPeriodic()
 	    case kArcade:
 		    drive.ArcadeDrive( rightY, rightX, !rightTrigger );
 		    break;
+	    case kXY:
+		    if (rightY > 0.05) {
+			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+		    } else {
+			drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+		    }
+		    break;
 	    case kTwoStick:
 		    drive.TankDrive( rightY, leftY );
 		    break;
 	    }
 	}
     }
+
+    SmartDashboard::Log( motor_right_1.Get(), "Right1" );
+    SmartDashboard::Log( motor_right_2.Get(), "Right2" );
+    SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
+    SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
 }
 
 void MyRobot::TeleopContinuous()
