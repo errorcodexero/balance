@@ -25,24 +25,21 @@ void MyRobot::TeleopInit()
 
 void MyRobot::TeleopPeriodic()
 {
+    float leftY  = joy_left.GetY();
+    bool leftTrigger = joy_left.GetTrigger();
+    bool leftTop     = joy_left.GetTop();
+
+    float rightY = joy_right.GetY();
+    float rightX = joy_right.GetX();
+    float rightT = joy_right.GetTwist();
+    bool rightTrigger = joy_right.GetTrigger();
+    bool rightTop     = joy_right.GetTop();
+
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);
     } else {
-	float leftY  = joy_left.GetY();
-	bool leftTrigger = joy_left.GetTrigger();
-	bool leftTop     = joy_left.GetTop();
-
-	float rightY = joy_right.GetY();
-	float rightX = joy_right.GetX();
-	float rightT = joy_right.GetTwist();
-	bool rightTrigger = joy_right.GetTrigger();
-	bool rightTop     = joy_right.GetTop();
-
 	if (rightTop) {
-	    if (!balance.IsRunning()) {
-		balance.Start( false, false );
-	    }
-	    balance.Run();
+	    balance.Start( false, false );
 	} else {
 	    balance.Stop();
 	    switch (driveMode) {
@@ -64,12 +61,19 @@ void MyRobot::TeleopPeriodic()
 		    break;
 	    }
 	}
+	balance.Run();
     }
 
     SmartDashboard::Log( motor_right_1.Get(), "Right1" );
     SmartDashboard::Log( motor_right_2.Get(), "Right2" );
     SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
     SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
+
+    if (leftTrigger) {
+	shooter.Start( leftY, leftY );
+    } else {
+	shooter.Stop();
+    }
 }
 
 void MyRobot::TeleopContinuous()

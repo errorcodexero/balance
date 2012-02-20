@@ -16,19 +16,22 @@ MyRobot::MyRobot() :
     pitch( 1 ),
     yaw( 2 ),
     compressor( 1, 1 ),
-    catcher( 1, 2 ),
-    upper( 2, Relay::kBothDirections ),
-    injector( 3, 4 ),
+    cowcatcher( 1, 2 ),
+    ball_pickup( 2, Relay::kBothDirections ),
+    ball_loaded( 2 ),
+    ball_injector( 3, 4 ),
     shooter_1( 1 ),
     shooter_2( 2 ),
-    speedy( 2 ),
+    shot_speed_1( 3, false ),
+    shot_speed_2( 4, false ),
     illuminator( 3, Relay::kForwardOnly ),
     driveChooser(),
     driveMode( kFlightStick ),
     controlChooser(),
     controlMode( kVoltage ),
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
-    balance( drive, pitch )
+    balance( drive, pitch ),
+    shooter( shooter_1, shooter_2, shot_speed_1, shot_speed_2 )
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
 
@@ -46,6 +49,7 @@ MyRobot::MyRobot() :
 void MyRobot::RobotInit()
 {
     balance.InitBalance();
+    shooter.InitShooter();
     DisableMotors();
 
     SmartDashboard::Log("Initialized", "Robot State");
@@ -123,7 +127,7 @@ void MyRobot::EnablePositionControl( CANJaguar& motor )
     motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Brake );
     motor.SetPositionReference( CANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
-    motor.SetPID( 0.300, 0.003, 0.001 );	// TBD: change this for position
+    motor.SetPID( 100.0, 0.03, 0.01 );		// TBD: tune this for position control
     motor.SetSafetyEnabled( true );
     motor.EnableControl( 0.0 );
     motor.Set( 0.0F, 0 );

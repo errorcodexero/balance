@@ -1,5 +1,30 @@
 <?xml version="1.0"?>
 <dashboard>
+	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.RobotPreferences">
+		<location x="568" y="0"/>
+		<width>375</width>
+		<height>184</height>
+	</static-widget>
+	<widget field="Balance.tilt" type="Integer" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
+		<location x="390" y="193"/>
+		<width>567</width>
+		<height>196</height>
+		<property name="Buffer Size (samples)" value="200"/>
+	</widget>
+	<widget field="Left Top" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
+		<location x="30" y="74"/>
+	</widget>
+	<widget field="Left Trigger" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
+		<location x="105" y="73"/>
+	</widget>
+	<widget field="Balance.tilt_max" type="Integer" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="232" y="157"/>
+		<width>139</width>
+	</widget>
+	<widget field="Balance.tilt_min" type="Integer" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="235" y="126"/>
+		<width>135</width>
+	</widget>
 	<widget field="Balance.speed" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
 		<location x="60" y="188"/>
 		<property name="Maximum" value="-1"/>
@@ -31,10 +56,10 @@
 		<property name="Minimum" value="1"/>
 	</widget>
 	<widget field="Right Top" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
-		<location x="33" y="89"/>
+		<location x="29" y="97"/>
 	</widget>
 	<widget field="Right Trigger" type="Boolean" class="edu.wpi.first.smartdashboard.gui.elements.BooleanBox">
-		<location x="105" y="90"/>
+		<location x="104" y="97"/>
 	</widget>
 	<widget field="Left Y" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.ProgressBar">
 		<location x="35" y="3"/>
@@ -57,7 +82,7 @@
 		<property name="Minimum" value="1"/>
 	</widget>
 	<widget field="Robot State" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="4" y="44"/>
+		<location x="2" y="43"/>
 	</widget>
 	<widget field="Drive" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
 		<location x="389" y="1"/>
@@ -83,7 +108,6 @@
 	<hidden field="Right2.set"/>
 	<hidden field="Right2 set"/>
 	<hidden field="Left2 set"/>
-	<hidden field="Balance.tilt_max"/>
 	<hidden field="Right1.set"/>
 	<hidden field="stickToggle"/>
 	<hidden field="LF voltage"/>
@@ -92,7 +116,6 @@
 	<hidden field="Joystick X"/>
 	<hidden field="Left Power"/>
 	<hidden field="LF speed"/>
-	<hidden field="Balance.tilt_min"/>
 	<hidden field="Joystick2 Y"/>
 	<hidden field="Joystick2 X"/>
 	<hidden field="Left2.set"/>

@@ -5,7 +5,9 @@
 #define _MYROBOT_H_
 
 #include <WPILib.h>
+#include "GearToothSource.h"
 #include "Balance.h"
+#include "Shooter.h"
 #include "Smart.h"
 
 class MyRobot : public IterativeRobot
@@ -46,7 +48,7 @@ private:
 
     // motor controllers
     CANJaguar motor_right_1, motor_right_2,
-		   motor_left_1, motor_left_2;
+	      motor_left_1, motor_left_2;
 
     // Gyro (rate of pitch/yaw) inputs
     AnalogChannel pitch, yaw;
@@ -55,17 +57,20 @@ private:
     Compressor compressor;
 
     // Cow-catcher control
-    DoubleSolenoid catcher;
+    DoubleSolenoid cowcatcher;
 
     // Ball picker-upper motor, bidirectional
-    Relay upper;
+    Relay ball_pickup;
+
+    // Ball-in-place detector
+    Counter ball_loaded;
 
     // Ball injector
-    DoubleSolenoid injector;
+    DoubleSolenoid ball_injector;
 
     // Shooter wheel
     Victor shooter_1, shooter_2;
-    Counter speedy;
+    GearToothSource shot_speed_1, shot_speed_2;
 
     // Camera illuminator on/off
     Relay illuminator;
@@ -88,6 +93,9 @@ private:
 
     // Bridge Balance Control
     Balance balance;
+
+    // Shooter control
+    Shooter shooter;
 
     ///////////////////////////////////////////////////////////////////
     // helper functions

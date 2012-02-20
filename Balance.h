@@ -23,6 +23,7 @@ private:
 
     // runtime state
     INT16 level;		// average gyro output when stopped
+    INT16 iir;			// IIR filtered value
     INT16 tilt_min, tilt_max;	// instrumentation for debugging
     bool running;		// are we in control?
     enum { kInitialized, kApproach, kOnRamp, kBraking, kBalanced } state; // operating state

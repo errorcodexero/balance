@@ -19,6 +19,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 //
 // ADXRS401: +/- 75 degree/s max, 15.0mV/degree/s out
 // ADXRS300: +/-300 degree/s max,  5.0mV/degree/s out
+// LPY503AL: +/- 30 degree/s max,  8.3mV/degree/s (1X) or
+//				  33.3mV/degree/s (4X) out
 //
 // If the ramp tilts +/- 15 degrees in 250ms (check this!), then the
 // peak output from the gyro will be no more than 0.75V for the gyros
@@ -27,17 +29,17 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // a range of +/-10V with a 12-bit resolution, so a 0.42V signal is
 // (0.42V/20V)*4096 = 86 counts, which should be easily detectable.
 
-#define	APPROACH_SPEED	0.30F
-#define	RAMP_SPEED	0.30F
-#define	BRAKE_SPEED	-0.30F
+#define	APPROACH_SPEED	0.50F
+#define	RAMP_SPEED	0.50F
+#define	BRAKE_SPEED	0.0F
 
-#define	TILT_UP		25
-#define	TILT_DOWN	-12
-#define	RAMP_TIME	1000	// milliseconds
-#define	BRAKE_TIME	225	// milliseconds
+#define	TILT_UP		60
+#define	TILT_DOWN	-60
+#define	RAMP_TIME	3000	// milliseconds
+#define	BRAKE_TIME	3000	// milliseconds
 
 // defaults from WPILib AnalogModule class:
-// static const long  kDefaultAverageBits    = 7
+// static const long  kDefaultAverageBits    = 10
 // static const long  kDefaultOversampleBits = 0
 // static const float kDefaultSampleRate     = 50000.0
 //
@@ -45,6 +47,11 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // (128 samples) yields an effective sample rate of approx.
 // 400 samples/sec or 2.5ms/sample which is a good match to the
 // above parts that include a two-pole 400Hz low-pass filter.
+//
+// Sampling at 50,000 samples/sec and averaging over 10 bits
+// (1024 samples) yields an effective sample rate of approx.
+// 50 samples/sec or 20mS/sample which is a good match to the
+// drive station control loop.
 
 Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     drive( driveTrain ),
@@ -56,7 +63,8 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     tilt_down( TILT_DOWN ),
     ramp_time( RAMP_TIME * 1000UL ),
     brake_time( BRAKE_TIME * 1000UL ),
-    level( 512 ), // nominal 2.5V
+    level( 0 ),
+    iir( 0 ),
     tilt_min( 0 ),
     tilt_max( 0 ),
     running( false ),
@@ -151,8 +159,9 @@ void Balance::InitBalance()
     // gyro.SetAverageBits( AnalogModule::kDefaultAverageBits );
     // gyro.SetOversampleBits( AnalogModule::kDefaultOversampleBits );
     // gyro.GetModule()->SetSampleRate( AnalogModule::kDefaultSampleRate );
+    gyro.SetAverageBits( 10 );
 
-    level = gyro.GetAverageValue();
+    iir = level = gyro.GetAverageValue();
     SmartDashboard::Log( level,  "Balance.level" );
 
     tilt_max = 0;
@@ -209,12 +218,16 @@ void Balance::Run()
     INT16 rotation = gyro.GetAverageValue();
     INT16 tilt;
 
+    // update IIR filter
+    iir = (iir + rotation) / 2;
+
     // assume gyro is mounted so a "tilt up" rotation is negative when moving forward
     if (reverse) {
-	tilt = (rotation - level);
+	tilt = (iir - level);
     } else {
-	tilt = (level - rotation);
+	tilt = (level - iir);
     }
+    SmartDashboard::Log( tilt,  "Balance.tilt" );
 
     // log min and max values for debugging
     if (tilt < tilt_min) {
