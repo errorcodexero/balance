@@ -7,6 +7,7 @@
 #include <WPILib.h>
 #include "GearToothSource.h"
 #include "Balance.h"
+#include "Pickup.h"
 #include "Shooter.h"
 #include "Smart.h"
 
@@ -93,6 +94,9 @@ private:
 
     // Bridge Balance Control
     Balance balance;
+
+    // Ball pickup control
+    Pickup pickup;
 
     // Shooter control
     Shooter shooter;

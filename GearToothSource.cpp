@@ -7,25 +7,25 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 GearToothSource::GearToothSource( UINT32 channel,
-				  bool directionSensitive = false ) :
+				  bool directionSensitive ) :
     GearTooth( channel, directionSensitive )
 {
 }
 
 GearToothSource::GearToothSource( UINT32 slot, UINT32 channel,
-				  bool directionSensitive = false ) :
+				  bool directionSensitive ) :
     GearTooth( slot, channel, directionSensitive )
 {
 }
 
 GearToothSource::GearToothSource( DigitalSource *source,
-				  bool directionSensitive = false ) :
+				  bool directionSensitive ) :
     GearTooth( source, directionSensitive )
 {
 }
 
 GearToothSource::GearToothSource( DigitalSource &source,
-				  bool directionSensitive = false ) :
+				  bool directionSensitive ) :
     GearTooth( source, directionSensitive )
 {
 }

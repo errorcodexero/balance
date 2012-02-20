@@ -1,6 +1,8 @@
 // sample robot code
 // Steve Tarr - team 1425 mentor - 11-Feb-2012
 
+// GearToothSource adds a PIDSource interface to GearTooth
+
 #ifndef _GEARTOOTHSOURCE_H_
 #define _GEARTOOTHSOURCE_H_
 

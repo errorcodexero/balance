@@ -6,7 +6,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-#define	PID_P	0.300F
+#define	PID_P	0.030F
 #define	PID_I	0.000F
 #define	PID_D	0.000F
 

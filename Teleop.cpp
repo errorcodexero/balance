@@ -26,6 +26,7 @@ void MyRobot::TeleopInit()
 void MyRobot::TeleopPeriodic()
 {
     float leftY  = joy_left.GetY();
+    float leftX  = joy_left.GetX();
     bool leftTrigger = joy_left.GetTrigger();
     bool leftTop     = joy_left.GetTop();
 
@@ -69,8 +70,14 @@ void MyRobot::TeleopPeriodic()
     SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
     SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
 
+    if (leftTop) {
+	pickup.Start();
+    } else {
+	pickup.Stop();
+    }
+
     if (leftTrigger) {
-	shooter.Start( leftY, leftY );
+	shooter.Start( leftX, leftY );
     } else {
 	shooter.Stop();
     }
