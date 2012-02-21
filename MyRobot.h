@@ -71,8 +71,8 @@ private:
     Solenoid ball_injector;
 
     // Shooter wheel
-    Victor shooter_1, shooter_2;
-    GearToothSource shot_speed_1, shot_speed_2;
+    Victor shooter_bottom, shooter_top;
+    GearToothSource shot_speed_bottom, shot_speed_top;
 
     // Camera illuminator on/off
     Relay illuminator;

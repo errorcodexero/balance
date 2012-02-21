@@ -16,14 +16,14 @@ MyRobot::MyRobot() :
     pitch( 1 ),
     yaw( 2 ),
     compressor( 1, 1 ),
-    cowcatcher( 1, 2 ),
+    cowcatcher( 1 ),
     ball_pickup( 2, Relay::kBothDirections ),
     ball_loaded( 2 ),
-    ball_injector( 3, 4 ),
-    shooter_1( 1 ),
-    shooter_2( 2 ),
-    shot_speed_1( 3, false ),
-    shot_speed_2( 4, false ),
+    ball_injector( 2 ),
+    shooter_bottom( 1 ),
+    shooter_top( 2 ),
+    shot_speed_bottom( 3, false ),
+    shot_speed_top( 4, false ),
     illuminator( 3, Relay::kForwardOnly ),
     driveChooser(),
     driveMode( kFlightStick ),
@@ -32,7 +32,7 @@ MyRobot::MyRobot() :
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
     balance( drive, pitch ),
     pickup( ball_pickup, ball_loaded ),
-    shooter( shooter_1, shooter_2, shot_speed_1, shot_speed_2 )
+    shooter( shooter_bottom, shooter_top, shot_speed_bottom, shot_speed_top )
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
 
@@ -62,6 +62,7 @@ void MyRobot::RobotInit()
 
 void MyRobot::Safe()
 {
+    compressor.Stop();
     balance.Stop();
     DisableMotors();
     pickup.Stop();

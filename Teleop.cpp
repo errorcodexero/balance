@@ -9,6 +9,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::TeleopInit()
 {
     Safe();
+    compressor.Start();
 
     balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
@@ -40,46 +41,12 @@ void MyRobot::TeleopPeriodic()
     bool rightTop     = joy_right.GetTop();
 
     DriverStation *pDS = DriverStation::GetInstance();
-    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0) + 0.5);	// 3-position switch
-    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0) + 0.5);	// 3-position switch
-//  int dsa3 = (int)((pDS->GetAnalogIn(2) * 2.0) + 0.5);	// 3-position switch
-    bool dsd1 = pDS->GetDigitalIn(1);
-    bool dsd2 = pDS->GetDigitalIn(2);
-//  bool dsd3 = pDS->GetDigitalIn(3);
-
-    if (balance.IsBalanced()) {
-	drive.Drive(0.0F, 0.0F);
-    } else {
-	if (rightTop) {
-	    balance.Start( false, false );
-	} else {
-	    balance.Stop();
-	    switch (driveMode) {
-	    case kFlightStick:
-		    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
-		    break;
-	    case kArcade:
-		    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-		    break;
-	    case kXY:
-		    if (rightY > 0.05) {
-			drive.ArcadeDrive( rightY, rightX, !rightTrigger );
-		    } else {
-			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-		    }
-		    break;
-	    case kTwoStick:
-		    drive.TankDrive( rightY, leftY );
-		    break;
-	    }
-	}
-	balance.Run();
-    }
-
-    SmartDashboard::Log( motor_right_1.Get(), "Right1" );
-    SmartDashboard::Log( motor_right_2.Get(), "Right2" );
-    SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
-    SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
+    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0 / 3.3) + 0.5);    // 3-position switch, pickup
+    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);    // 3-position switch, cowcatcher
+    int dsa3 = (int)((pDS->GetAnalogIn(3) * 256.0 / 3.3) + 0.5);  // potentiometer, shot speed?
+    bool dsd1 = pDS->GetDigitalIn(1);	// pushbutton, fire control
+    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, teach mode
+    bool dsd3 = pDS->GetDigitalIn(3);	// pushbotton, store
 
     switch (dsa1) {
     case 0:
@@ -105,16 +72,50 @@ void MyRobot::TeleopPeriodic()
     }
 
     if (dsd1) {
+	ball_injector.Set( true );
+    } else {
+	ball_injector.Set( false );
+    }
+
+    if (dsd2) {
 	shooter.Start();
     } else {
 	shooter.Stop();
     }
 
-    if (dsd2) {
-	ball_injector.Set( DoubleSolenoid::kForward );
+    if (balance.IsBalanced()) {
+	drive.Drive(0.0F, 0.0F);
     } else {
-	ball_injector.Set( DoubleSolenoid::kReverse );
+	if (rightTop) {
+	    balance.Start( false, false );
+	} else {
+	    balance.Stop();
+	    switch (driveMode) {
+	    case kFlightStick:
+		    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
+		    break;
+	    case kArcade:
+		    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+		    break;
+	    case kXY:
+		    if (rightY > 0.10) {
+			drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+		    } else {
+			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+		    }
+		    break;
+	    case kTwoStick:
+		    drive.TankDrive( rightY, leftY );
+		    break;
+	    }
+	}
+	balance.Run();
     }
+
+    SmartDashboard::Log( motor_right_1.Get(), "Right1" );
+    SmartDashboard::Log( motor_right_2.Get(), "Right2" );
+    SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
+    SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
 }
 
 void MyRobot::TeleopContinuous()

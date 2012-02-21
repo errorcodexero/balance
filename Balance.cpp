@@ -36,7 +36,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	TILT_UP		60
 #define	TILT_DOWN	-60
 #define	RAMP_TIME	3000	// milliseconds
-#define	BRAKE_TIME	3000	// milliseconds
+#define	BRAKE_TIME	0	// milliseconds
 
 // defaults from WPILib AnalogModule class:
 // static const long  kDefaultAverageBits    = 10
