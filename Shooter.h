@@ -14,6 +14,7 @@ private:
 
     // operating parameters configured from preferences/SmartDashboard
     float pid_p, pid_i, pid_d;
+    float speed_bottom, speed_top;
 
     // motor controllers
     PIDController pid_bottom, pid_top;
@@ -26,7 +27,7 @@ public:
     ~Shooter();
     
     void InitShooter();
-    void Start( float speed_bottom, float speed_top );
+    void Start();
     void Stop();
 
     bool IsRunning();

@@ -60,6 +60,16 @@ void MyRobot::RobotInit()
     lcd->UpdateLCD();
 }
 
+void MyRobot::Safe()
+{
+    balance.Stop();
+    DisableMotors();
+    pickup.Stop();
+    shooter.Stop();
+    cowcatcher.Set( false );
+    ball_injector.Set( false );
+}
+
 void MyRobot::DisableMotor( CANJaguar& motor )
 {
     motor.DisableControl();
@@ -128,7 +138,7 @@ void MyRobot::EnablePositionControl( CANJaguar& motor )
     motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Brake );
     motor.SetPositionReference( CANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
-    motor.SetPID( 100.0, 0.03, 0.01 );		// TBD: tune this for position control
+    motor.SetPID( 1000.0, 0.0, 10.0 );		// TBD: tune this for position control
     motor.SetSafetyEnabled( true );
     motor.EnableControl( 0.0 );
     motor.Set( 0.0F, 0 );

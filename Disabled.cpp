@@ -8,9 +8,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::DisabledInit()
 {
-    balance.Stop();
-    DisableMotors();
-    
+    Safe();
+
     SmartDashboard::Log("Disabled", "Robot State");
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();

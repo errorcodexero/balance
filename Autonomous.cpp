@@ -8,8 +8,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::AutonomousInit()
 {
-    balance.Stop();
-    DisableMotors();
+    Safe();
     
     SmartDashboard::Log("Autonomous", "Robot State");
 

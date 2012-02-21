@@ -18,6 +18,7 @@ public:
 
     void RobotInit();
 
+    void Safe();
     void DisableMotors();
     void EnableVoltageControl();
     void EnableSpeedControl();
@@ -58,7 +59,7 @@ private:
     Compressor compressor;
 
     // Cow-catcher control
-    DoubleSolenoid cowcatcher;
+    Solenoid cowcatcher;
 
     // Ball picker-upper motor, bidirectional
     Relay ball_pickup;
@@ -67,7 +68,7 @@ private:
     Counter ball_loaded;
 
     // Ball injector
-    DoubleSolenoid ball_injector;
+    Solenoid ball_injector;
 
     // Shooter wheel
     Victor shooter_1, shooter_2;

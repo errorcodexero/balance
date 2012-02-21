@@ -8,6 +8,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 void MyRobot::TeleopInit()
 {
+    Safe();
+
     balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
     controlMode = (ControlMode) (int) controlChooser.GetSelected();
@@ -26,15 +28,24 @@ void MyRobot::TeleopInit()
 void MyRobot::TeleopPeriodic()
 {
     float leftY  = joy_left.GetY();
-    float leftX  = joy_left.GetX();
-    bool leftTrigger = joy_left.GetTrigger();
-    bool leftTop     = joy_left.GetTop();
+//  float leftX  = joy_left.GetX();
+//  float leftT  = joy_left.GetTwist();
+//  bool leftTrigger = joy_left.GetTrigger();
+//  bool leftTop     = joy_left.GetTop();
 
     float rightY = joy_right.GetY();
     float rightX = joy_right.GetX();
     float rightT = joy_right.GetTwist();
     bool rightTrigger = joy_right.GetTrigger();
     bool rightTop     = joy_right.GetTop();
+
+    DriverStation *pDS = DriverStation::GetInstance();
+    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0) + 0.5);	// 3-position switch
+    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0) + 0.5);	// 3-position switch
+//  int dsa3 = (int)((pDS->GetAnalogIn(2) * 2.0) + 0.5);	// 3-position switch
+    bool dsd1 = pDS->GetDigitalIn(1);
+    bool dsd2 = pDS->GetDigitalIn(2);
+//  bool dsd3 = pDS->GetDigitalIn(3);
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);
@@ -70,16 +81,39 @@ void MyRobot::TeleopPeriodic()
     SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
     SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
 
-    if (leftTop) {
+    switch (dsa1) {
+    case 0:
 	pickup.Start();
-    } else {
+	break;
+    case 1:
 	pickup.Stop();
+	break;
+    case 2:
+	pickup.Reverse();
+	break;
     }
 
-    if (leftTrigger) {
-	shooter.Start( leftX, leftY );
+    switch (dsa2) {
+    case 0:
+	cowcatcher.Set( true );
+	break;
+    case 1:
+	break;
+    case 2:
+	cowcatcher.Set( false );
+	break;
+    }
+
+    if (dsd1) {
+	shooter.Start();
     } else {
 	shooter.Stop();
+    }
+
+    if (dsd2) {
+	ball_injector.Set( DoubleSolenoid::kForward );
+    } else {
+	ball_injector.Set( DoubleSolenoid::kReverse );
     }
 }
 

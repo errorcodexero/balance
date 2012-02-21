@@ -6,6 +6,8 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+#define	SPEED_TOP 0.800
+#define	SPEED_BOTTOM 0.800
 #define	PID_P	0.030F
 #define	PID_I	0.000F
 #define	PID_D	0.000F
@@ -22,6 +24,16 @@ Shooter::Shooter( PIDOutput &mb, PIDOutput &mt, PIDSource &gb, PIDSource &gt ) :
     bool saveNeeded = false;
     
     printf("In Shooter constructor, pref = 0x%p\n", pref);
+    if (!pref->ContainsKey( "Shooter.top" )) {
+	pref->PutDouble( "Shooter.top", PID_P );
+	printf("Preferences: save top\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Shooter.bottom" )) {
+	pref->PutDouble( "Shooter.bottom", PID_P );
+	printf("Preferences: save bottom\n");
+	saveNeeded = true;
+    }
     if (!pref->ContainsKey( "Shooter.p" )) {
 	pref->PutDouble( "Shooter.p", PID_P );
 	printf("Preferences: save P\n");
@@ -57,6 +69,15 @@ void Shooter::InitShooter()
 
     Preferences *pref = Preferences::GetInstance();
 
+    speed_bottom = pref->GetDouble( "Shooter.bottom", PID_P );
+    speed_top = pref->GetDouble( "Shooter.top", PID_P );
+
+    printf("InitShooter: bottom = %f\n", speed_bottom);
+    printf("InitShooter: top = %f\n", speed_top);
+
+    pid_bottom.SetSetpoint( speed_bottom );
+    pid_top.SetSetpoint( speed_top );
+
     pid_p = pref->GetDouble( "Shooter.p", PID_P );
     pid_i = pref->GetDouble( "Shooter.i", PID_I );
     pid_d = pref->GetDouble( "Shooter.d", PID_D );
@@ -69,7 +90,7 @@ void Shooter::InitShooter()
     pid_top.SetPID( pid_p, pid_i, pid_d );
 }
 
-void Shooter::Start( float speed_bottom, float speed_top )
+void Shooter::Start()
 {
     if (!IsRunning()) {
 	InitShooter();
@@ -77,9 +98,6 @@ void Shooter::Start( float speed_bottom, float speed_top )
 	pid_top.Enable();
 	running = true;
     }
-
-    pid_bottom.SetSetpoint( speed_bottom );
-    pid_top.SetSetpoint( speed_top );
 }
 
 void Shooter::Stop()
