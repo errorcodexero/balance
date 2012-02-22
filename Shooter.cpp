@@ -7,8 +7,8 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-#define	SPEED_TOP	2600
-#define	SPEED_BOTTOM	3400
+#define	SPEED_TOP	2600.
+#define	SPEED_BOTTOM	3400.
 #define	PID_P	0.010F
 #define	PID_I	0.000F
 #define	PID_D	0.000F
@@ -27,12 +27,12 @@ Shooter::Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
     
     printf("In Shooter constructor, pref = 0x%p\n", pref);
     if (!pref->ContainsKey( "Shooter.top" )) {
-	pref->PutDouble( "Shooter.top", PID_P );
+	pref->PutDouble( "Shooter.top", SPEED_TOP );
 	printf("Preferences: save top\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Shooter.bottom" )) {
-	pref->PutDouble( "Shooter.bottom", PID_P );
+	pref->PutDouble( "Shooter.bottom", SPEED_BOTTOM );
 	printf("Preferences: save bottom\n");
 	saveNeeded = true;
     }
@@ -132,9 +132,15 @@ void Shooter::Stop()
 
 void Shooter::Run()
 {
+    static int logCount = 0;
     if (IsRunning()) {
-	SmartDashboard::Log( sensor_bottom.PIDGet(), "bot" );
-	SmartDashboard::Log( sensor_top.PIDGet(), "top" );
+	if (++logCount > 100) {
+	    logCount = 0;
+	    SmartDashboard::Log( sensor_bottom.PIDGet(), "bot" );
+	    SmartDashboard::Log( sensor_top.PIDGet(), "top" );
+	}
+    } else {
+	logCount = 0;
     }
 }
 

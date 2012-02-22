@@ -8,6 +8,19 @@
 
 class Pickup
 {
+public:
+    Pickup( Relay &motor_relay, Counter &ball_counter );
+    ~Pickup();
+
+    void Start();
+    void Reverse();
+    void Stop();
+
+    void SetDirection( int d );
+    int GetDirection();
+
+    // TBD: add e.g. IsBallInPosition
+
 private:
     // motor controller
     Relay &relay;
@@ -16,17 +29,7 @@ private:
     Counter &counter;
 
     // runtime control
-    bool running;
-
-public:
-    Pickup( Relay &motor_relay, Counter &ball_counter );
-    ~Pickup();
-    
-    void Start();
-    void Reverse();
-    void Stop();
-
-    // TBD: add e.g. IsBallInPosition
+    int direction;	// -1 reverse, 0 stopped, 1 forward
 };
 
 #endif // _PICKUP_H_

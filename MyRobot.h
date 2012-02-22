@@ -53,7 +53,7 @@ private:
 	      motor_left_1, motor_left_2;
 
     // Gyro (rate of pitch/yaw) inputs
-    AnalogChannel pitch, yaw;
+    Gyro pitch, yaw;
 
     // Compressor (control and sensor)
     Compressor compressor;
@@ -98,6 +98,7 @@ private:
 
     // Ball pickup control
     Pickup pickup;
+    int lastPickup;
 
     // Shooter control
     Shooter shooter;

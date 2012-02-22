@@ -10,6 +10,7 @@ void MyRobot::TeleopInit()
 {
     Safe();
     compressor.Start();
+    lastPickup = 0;
 
     balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
@@ -45,19 +46,23 @@ void MyRobot::TeleopPeriodic()
     int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);    // 3-position switch, cowcatcher
     int dsa3 = (int)((pDS->GetAnalogIn(3) * 256.0 / 3.3) + 0.5);  // potentiometer, shot speed?
     bool dsd1 = pDS->GetDigitalIn(1);	// pushbutton, fire control
-    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, teach mode
+    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, shooter motor enable
     bool dsd3 = pDS->GetDigitalIn(3);	// pushbotton, store
 
-    switch (dsa1) {
-    case 0:
-	pickup.Start();
-	break;
-    case 1:
-	pickup.Stop();
-	break;
-    case 2:
-	pickup.Reverse();
-	break;
+    if (dsa1 != lastPickup) {
+	int d = pickup.GetDirection();
+	switch (dsa1) {
+	case 0:	// down, change forward->stopped, stopped->reverse
+	    if (d >= 0) --d;
+	    break;
+	case 1:	// center-off, no change
+	    break;
+	case 2:	// up, change reverse->stopped, stopped->forward
+	    if (d <= 0) ++d;
+	    break;
+	}
+	pickup.SetDirection(d);
+	lastPickup = dsa1;
     }
 
     switch (dsa2) {
@@ -82,6 +87,7 @@ void MyRobot::TeleopPeriodic()
     } else {
 	shooter.Stop();
     }
+    shooter.Run();
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);

@@ -8,8 +8,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 // Balance the bridge by using a pitch rate sensor to detect when the
 // bridge starts to tilt.  We'll use one of the Analog Devices rate
-// gyros supplied with the KOP.  The boards shipped in different
-// years have different sensitivities and maximum ranges:
+// gyros supplied with the KOP or a similar COTS device from another
+// vendor.  The boards shipped in the KOP in different years have
+// varying sensitivities and maximum ranges:
 //
 // ADXRS150 (2007): +/-150 degree/s max, 12.5mV/degree/s out
 // ADW22304 (2008): +/- 80 degree/s max, 12.5mV/degree/s out
@@ -27,33 +28,35 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // used in the 2007-2009 KOP, and no more than about 0.42V for the
 // gyro used in the 2010-2012 KOP.  The cRIO analog input module has
 // a range of +/-10V with a 12-bit resolution, so a 0.42V signal is
-// (0.42V/20V)*4096 = 86 counts, which should be easily detectable.
+// (0.42V/20V)*4096 = 86 counts, which should give us an acceptable
+// signal over electrical noise.  Mechanical noise as the robot tilts
+// back and forth in the 6-wheel drive may be a problem!
+
+#define	SENSITIVITY	0.0333	// 33.3mV/degree/s
 
 #define	APPROACH_SPEED	0.50F
 #define	RAMP_SPEED	0.50F
 #define	BRAKE_SPEED	0.0F
 
-#define	TILT_UP		60
-#define	TILT_DOWN	-60
+#define	TILT_UP		10.0F
+#define	TILT_DOWN	8.0F
 #define	RAMP_TIME	3000	// milliseconds
 #define	BRAKE_TIME	0	// milliseconds
 
 // defaults from WPILib AnalogModule class:
-// static const long  kDefaultAverageBits    = 10
-// static const long  kDefaultOversampleBits = 0
-// static const float kDefaultSampleRate     = 50000.0
+// static const long  kTimebase              = 40000000;  // fixed 40 MHz clock
+// static const long  kDefaultOversampleBits = 0;
+// static const long  kDefaultAverageBits    = 10;
+// static const float kDefaultSampleRate     = 50000.0;   // 20uS per raw sample
 //
-// Sampling at 50,000 samples/sec and averaging over 7 bits
-// (128 samples) yields an effective sample rate of approx.
-// 400 samples/sec or 2.5ms/sample which is a good match to the
-// above parts that include a two-pole 400Hz low-pass filter.
-//
-// Sampling at 50,000 samples/sec and averaging over 10 bits
-// (1024 samples) yields an effective sample rate of approx.
-// 50 samples/sec or 20mS/sample which is a good match to the
-// drive station control loop.
+// defaults from WPILib Gyro class:
+// static const UINT32 kOversampleBits       = 10;        // Gyro uses oversampling for accuracy
+// static const UINT32 kAverageBits          = 0;
+// static const float kSamplesPerSecond      = 50.0;      // 20mS after oversampling
+// static const float kCalibrationSampleTime = 5.0;
+// static const float kDefaultVoltsPerDegreePerSecond = 0.007;  // can be changed
 
-Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
+Balance::Balance( RobotDrive& driveTrain, Gyro& pitchGyro ) :
     drive( driveTrain ),
     gyro( pitchGyro ),
     approach_speed( APPROACH_SPEED ),
@@ -63,14 +66,11 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
     tilt_down( TILT_DOWN ),
     ramp_time( RAMP_TIME * 1000UL ),
     brake_time( BRAKE_TIME * 1000UL ),
-    level( 0 ),
-    iir( 0 ),
-    tilt_min( 0 ),
-    tilt_max( 0 ),
     running( false ),
     state( kInitialized ),
     reverse( false ),
     speed( 0.0F ),
+    tilt( 0.0F ),
     when( 0 )
 {
     Preferences *pref = Preferences::GetInstance();
@@ -93,12 +93,12 @@ Balance::Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro ) :
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.tilt_up" )) {
-	pref->PutInt( "Balance.tilt_up", TILT_UP );
+	pref->PutDouble( "Balance.tilt_up", TILT_UP );
 	printf("Preferences: save TILT_UP\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Balance.tilt_down" )) {
-	pref->PutInt( "Balance.tilt_down", TILT_DOWN );
+	pref->PutDouble( "Balance.tilt_down", TILT_DOWN );
 	printf("Preferences: save TILT_DOWN\n");
 	saveNeeded = true;
     }
@@ -136,42 +136,34 @@ void Balance::InitBalance()
     ramp_speed     = pref->GetDouble( "Balance.ramp_speed",     RAMP_SPEED     );
     brake_speed    = pref->GetDouble( "Balance.brake_speed",    BRAKE_SPEED    );
 
-    printf("InitBalance: approach_speed = %f\n", approach_speed);
-    printf("InitBalance: ramp_speed = %f\n", ramp_speed);
-    printf("InitBalance: brake_speed = %f\n", brake_speed);
+    printf("InitBalance: approach_speed = %4.2f\n", approach_speed);
+    printf("InitBalance: ramp_speed = %4.2f\n", ramp_speed);
+    printf("InitBalance: brake_speed = %4.2f\n", brake_speed);
 
-    tilt_up        = pref->GetInt( "Balance.tilt_up",   TILT_UP   );
-    tilt_down      = pref->GetInt( "Balance.tilt_down", TILT_DOWN );
+    tilt_up        = pref->GetDouble( "Balance.tilt_up",   TILT_UP   );
+    tilt_down      = pref->GetDouble( "Balance.tilt_down", TILT_DOWN );
 
-    printf("InitBalance: tilt_up = %d\n", tilt_up);
-    printf("InitBalance: tilt_down = %d\n", tilt_down);
+    printf("InitBalance: tilt_up = %4.2f\n", tilt_up);
+    printf("InitBalance: tilt_down = %4.2f\n", tilt_down);
 
     // timer in microseconds, preference value in milliseconds
     ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",   RAMP_TIME ) * 1000UL;
     brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
 
-    printf("InitBalance: ramp_time = %lu\n", (unsigned long) ramp_time);
-    printf("InitBalance: brake_time = %lu\n", (unsigned long) brake_time);
+    printf("InitBalance: ramp_time = %lu\n", (unsigned long) ramp_time / 1000UL);
+    printf("InitBalance: brake_time = %lu\n", (unsigned long) brake_time / 1000UL);
 
-    // read the gyro's averaged output before we start moving
-    // in order to compensate for various offset voltages and drift
+    // set the gyro sensitivity so results will be in degrees
+    gyro.SetSensitivity( SENSITIVITY );
 
-    // gyro.SetAverageBits( AnalogModule::kDefaultAverageBits );
-    // gyro.SetOversampleBits( AnalogModule::kDefaultOversampleBits );
-    // gyro.GetModule()->SetSampleRate( AnalogModule::kDefaultSampleRate );
-    gyro.SetAverageBits( 10 );
-
-    iir = level = gyro.GetAverageValue();
-    SmartDashboard::Log( level,  "Balance.level" );
-
-    tilt_max = 0;
-    SmartDashboard::Log( tilt_max,  "Balance.tilt_max" );
-
-    tilt_min = 0;
-    SmartDashboard::Log( tilt_min,  "Balance.tilt_min" );
+    // reset the gyro to "level"
+    gyro.Reset();
 
     speed = 0.0F;
     SmartDashboard::Log( speed, "Balance.speed" );
+
+    tilt = 0.0F;
+    SmartDashboard::Log( tilt, "Balance.tilt" );
 
     state = kInitialized;
     SmartDashboard::Log( "initialized", "Balance.state" );
@@ -215,34 +207,17 @@ void Balance::Stop()
 
 void Balance::Run()
 {
-    INT16 rotation = gyro.GetAverageValue();
-    INT16 tilt;
-
-    // update IIR filter
-    iir = (iir + rotation) / 2;
-
     // assume gyro is mounted so a "tilt up" rotation is negative when moving forward
+    tilt = gyro.GetAngle();
     if (reverse) {
-	tilt = (iir - level);
-    } else {
-	tilt = (level - iir);
+	tilt = -tilt;
     }
     SmartDashboard::Log( tilt,  "Balance.tilt" );
-
-    // log min and max values for debugging
-    if (tilt < tilt_min) {
-	tilt_min = tilt;
-	SmartDashboard::Log( tilt, "Balance.tilt_min" );
-    }
-    if (tilt > tilt_max) {
-	tilt_max = tilt;
-	SmartDashboard::Log( tilt, "Balance.tilt_max" );
-    }
 
     if (IsRunning()) {
 	// approaching the ramp
 	if (state == kApproach) {
-	    printf("kApproach: tilt %d\n", tilt);
+	    printf("kApproach: tilt %4.2f\n", tilt);
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
 		SmartDashboard::Log( "onRamp",  "Balance.state" );
@@ -253,7 +228,7 @@ void Balance::Run()
 	// climbing the ramp
 	if (state == kOnRamp) {
 	    long timeleft = when - (long) GetFPGATime();
-	    printf("kOnRamp: tilt %d time %ld\n", tilt, timeleft);
+	    printf("kOnRamp: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if ((timeleft <= 0) && (tilt < tilt_down)) {
 		state = kBraking;
 		SmartDashboard::Log( "braking",  "Balance.state" );
@@ -264,7 +239,7 @@ void Balance::Run()
 	// braking
 	if (state == kBraking) {
 	    long timeleft = when - (long) GetFPGATime();
-	    printf("kBraking: tilt %d time %ld\n", tilt, timeleft);
+	    printf("kBraking: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if (timeleft <= 0) {
 		state = kBalanced; // or so we hope
 		SmartDashboard::Log( "balanced",  "Balance.state" );

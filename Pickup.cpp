@@ -8,7 +8,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 Pickup::Pickup( Relay &motor_relay, Counter &ball_counter ) :
     relay( motor_relay ),
-    counter( ball_counter )
+    counter( ball_counter ),
+    direction( 0 )
 {
     Stop();
 }
@@ -18,18 +19,39 @@ Pickup::~Pickup()
     Stop();
 }
 
+void Pickup::SetDirection( int d )
+{
+    direction = d;
+    switch (direction) {
+    case -1:
+	relay.Set(Relay::kReverse);
+	break;
+    case 0:
+	relay.Set(Relay::kOff);
+	break;
+    case 1:
+	relay.Set(Relay::kForward);
+	break;
+    }
+}
+
+int Pickup::GetDirection()
+{
+    return direction;
+}
+
 void Pickup::Start()
 {
-    relay.Set( Relay::kForward );
+    SetDirection( 1 );
 }
 
 void Pickup::Reverse()
 {
-    relay.Set( Relay::kReverse );
+    SetDirection( -1 );
 }
 
 void Pickup::Stop()
 {
-    relay.Set( Relay::kOff );
+    SetDirection( 0 );
 }
 

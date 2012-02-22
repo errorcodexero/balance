@@ -10,29 +10,27 @@ class Balance
 {
 private:
     RobotDrive& drive;
-    AnalogChannel& gyro;
+    Gyro& gyro;
 
     // operating parameters configured from preferences/SmartDashboard
     float approach_speed;
     float ramp_speed;
     float brake_speed;
-    INT16 tilt_up;
-    INT16 tilt_down;
+    float tilt_up;
+    float tilt_down;
     UINT32 ramp_time;
     UINT32 brake_time;
 
     // runtime state
-    INT16 level;		// average gyro output when stopped
-    INT16 iir;			// IIR filtered value
-    INT16 tilt_min, tilt_max;	// instrumentation for debugging
     bool running;		// are we in control?
     enum { kInitialized, kApproach, kOnRamp, kBraking, kBalanced } state; // operating state
     bool reverse;		// running in reverse
     float speed;		// current motor speed
+    float tilt;			// accumulated angle
     long when;			// timestamp for braking   
 
 public:
-    Balance( RobotDrive& driveTrain, AnalogChannel& pitchGyro );
+    Balance( RobotDrive& driveTrain, Gyro& pitchGyro );
     ~Balance();
     
     void InitBalance();
