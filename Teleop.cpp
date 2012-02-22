@@ -42,9 +42,9 @@ void MyRobot::TeleopPeriodic()
     bool rightTop     = joy_right.GetTop();
 
     DriverStation *pDS = DriverStation::GetInstance();
-    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0 / 3.3) + 0.5);    // 3-position switch, pickup
-    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);    // 3-position switch, cowcatcher
-    int dsa3 = (int)((pDS->GetAnalogIn(3) * 256.0 / 3.3) + 0.5);  // potentiometer, shot speed?
+    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0 / 3.3) + 0.5);	// 3-position switch, pickup
+    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);	// 3-position switch, cowcatcher
+    float dsa3 = (pDS->GetAnalogIn(3) * 5000.0 / 3.3);		// potentiometer, shot speed?
     bool dsd1 = pDS->GetDigitalIn(1);	// pushbutton, fire control
     bool dsd2 = pDS->GetDigitalIn(2);	// key switch, shooter motor enable
     bool dsd3 = pDS->GetDigitalIn(3);	// pushbotton, store
@@ -83,7 +83,7 @@ void MyRobot::TeleopPeriodic()
     }
 
     if (dsd2) {
-	shooter.Start();
+	shooter.Start(dsa3);
     } else {
 	shooter.Stop();
     }

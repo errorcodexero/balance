@@ -7,8 +7,6 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-#define	SPEED_TOP	2600.
-#define	SPEED_BOTTOM	3400.
 #define	PID_P	0.010F
 #define	PID_I	0.000F
 #define	PID_D	0.000F
@@ -20,22 +18,13 @@ Shooter::Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
     pid_p(0.0F), pid_i(0.0F), pid_d(0.0F),
     pid_bottom( pid_p, pid_i, pid_d, &sensor_bottom, &motor_bottom ),
     pid_top( pid_p, pid_i, pid_d, &sensor_top, &motor_top ),
+    speed_bottom(0.0F), speed_top(0.0F),
     running(false)
 {
     Preferences *pref = Preferences::GetInstance();
     bool saveNeeded = false;
     
     printf("In Shooter constructor, pref = 0x%p\n", pref);
-    if (!pref->ContainsKey( "Shooter.top" )) {
-	pref->PutDouble( "Shooter.top", SPEED_TOP );
-	printf("Preferences: save top\n");
-	saveNeeded = true;
-    }
-    if (!pref->ContainsKey( "Shooter.bottom" )) {
-	pref->PutDouble( "Shooter.bottom", SPEED_BOTTOM );
-	printf("Preferences: save bottom\n");
-	saveNeeded = true;
-    }
     if (!pref->ContainsKey( "Shooter.p" )) {
 	pref->PutDouble( "Shooter.p", PID_P );
 	printf("Preferences: save P\n");
@@ -70,11 +59,6 @@ void Shooter::InitShooter()
     Stop();
 
     Preferences *pref = Preferences::GetInstance();
-    speed_bottom = pref->GetDouble( "Shooter.bottom", SPEED_BOTTOM );
-    speed_top = pref->GetDouble( "Shooter.top", SPEED_TOP );
-
-    printf("InitShooter: bottom = %f\n", speed_bottom);
-    printf("InitShooter: top = %f\n", speed_top);
 
     pid_p = pref->GetDouble( "Shooter.p", PID_P );
     pid_i = pref->GetDouble( "Shooter.i", PID_I );
@@ -85,13 +69,19 @@ void Shooter::InitShooter()
     printf("InitShooter: pid_d = %f\n", pid_d);
 }
 
-void Shooter::Start()
+void Shooter::Start( float speed )
 {
     // once started, keep running with the original parameters
     if (IsRunning()) return;
 
     // load configuration from preferences file or SmartDashboard
     InitShooter();
+
+    // set motor speeds
+    speed_bottom = speed;
+    speed_top = speed * 0.7;	// empirical ratio
+    printf("Shooter: bottom = %6.0f\n", speed_bottom);
+    printf("Shooter: top = %6.0f\n", speed_top);
 
     // enable the motor speed sensors (counters)
     sensor_bottom.Start();
