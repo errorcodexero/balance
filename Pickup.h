@@ -12,7 +12,7 @@ public:
     Pickup( Relay &motor_relay, Counter &ball_counter );
     ~Pickup();
 
-    void Start();
+    void Forward();
     void Reverse();
     void Stop();
 

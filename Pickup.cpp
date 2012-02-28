@@ -40,7 +40,7 @@ int Pickup::GetDirection()
     return direction;
 }
 
-void Pickup::Start()
+void Pickup::Forward()
 {
     SetDirection( 1 );
 }

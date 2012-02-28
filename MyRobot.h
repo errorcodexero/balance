@@ -9,7 +9,6 @@
 #include "Balance.h"
 #include "Pickup.h"
 #include "Shooter.h"
-#include "Smart.h"
 
 class MyRobot : public IterativeRobot
 {
@@ -42,7 +41,7 @@ private:
     ///////////////////////////////////////////////////////////////////
 
     // driver station inputs
-    SmartJoystick joy_right, joy_left;
+    Joystick joy_right, joy_left;
 
     ///////////////////////////////////////////////////////////////////
     // cRIO inputs and outputs
@@ -98,7 +97,6 @@ private:
 
     // Ball pickup control
     Pickup pickup;
-    int lastPickup;
 
     // Shooter control
     Shooter shooter;

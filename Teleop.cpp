@@ -10,7 +10,6 @@ void MyRobot::TeleopInit()
 {
     Safe();
     compressor.Start();
-    lastPickup = 0;
 
     balance.InitBalance();
     driveMode = (DriveType) (int) driveChooser.GetSelected();
@@ -44,35 +43,49 @@ void MyRobot::TeleopPeriodic()
     DriverStation *pDS = DriverStation::GetInstance();
     int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0 / 3.3) + 0.5);	// 3-position switch, pickup
     int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);	// 3-position switch, cowcatcher
-    float dsa3 = (pDS->GetAnalogIn(3) * 5000.0 / 3.3);		// potentiometer, shot speed?
+    float dsa3 = (pDS->GetAnalogIn(3) * 1200.0 / 3.3);		// potentiometer, shot speed?
+    int dsa4 = (int)((pDS->GetAnalogIn(4) * 2.0 / 3.3) + 0.5);	// 3-position switch, shooter
+
+// dsa5 isn't usable: WPILib doesn't allow analog channels 5-8
+// even though they show up on the driver station
+//  int dsa5 = (int)((pDS->GetAnalogIn(5) * 2.0 / 3.3) + 0.5);	// 3-position switch, target height
+
     bool dsd1 = pDS->GetDigitalIn(1);	// pushbutton, fire control
-    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, shooter motor enable
+    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, teach mode
     bool dsd3 = pDS->GetDigitalIn(3);	// pushbotton, store
 
-    if (dsa1 != lastPickup) {
-	int d = pickup.GetDirection();
-	switch (dsa1) {
-	case 0:	// down, change forward->stopped, stopped->reverse
-	    if (d >= 0) --d;
-	    break;
-	case 1:	// center-off, no change
-	    break;
-	case 2:	// up, change reverse->stopped, stopped->forward
-	    if (d <= 0) ++d;
-	    break;
-	}
-	pickup.SetDirection(d);
-	lastPickup = dsa1;
+    switch (dsa1) {
+    case 2:	// up, forward
+	pickup.Forward();
+	break;
+    case 1:	// center, off
+        pickup.Stop();
+	break;
+    case 0:	// down, reverse
+	pickup.Reverse();
+	break;
     }
 
     switch (dsa2) {
-    case 0:
-	cowcatcher.Set( true );
+    case 2:
+	cowcatcher.Set( false );
 	break;
     case 1:
 	break;
-    case 2:
-	cowcatcher.Set( false );
+    case 0:
+	cowcatcher.Set( true );
+	break;
+    }
+
+    switch (dsa4) {
+    case 2:	// up, start
+	shooter.Start(dsa3);
+	break;
+    case 1:	// center-off, no change
+	shooter.Run();
+	break;
+    case 0:	// down, stop
+	shooter.Stop();
 	break;
     }
 
@@ -82,12 +95,6 @@ void MyRobot::TeleopPeriodic()
 	ball_injector.Set( false );
     }
 
-    if (dsd2) {
-	shooter.Start(dsa3);
-    } else {
-	shooter.Stop();
-    }
-    shooter.Run();
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);

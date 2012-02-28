@@ -10,24 +10,28 @@ GearToothSource::GearToothSource( UINT32 channel,
 				  bool directionSensitive ) :
     GearTooth( channel, directionSensitive )
 {
+    SetSemiPeriodMode(false);
 }
 
 GearToothSource::GearToothSource( UINT32 slot, UINT32 channel,
 				  bool directionSensitive ) :
     GearTooth( slot, channel, directionSensitive )
 {
+    SetSemiPeriodMode(false);
 }
 
 GearToothSource::GearToothSource( DigitalSource *source,
 				  bool directionSensitive ) :
     GearTooth( source, directionSensitive )
 {
+    SetSemiPeriodMode(false);
 }
 
 GearToothSource::GearToothSource( DigitalSource &source,
 				  bool directionSensitive ) :
     GearTooth( source, directionSensitive )
 {
+    SetSemiPeriodMode(false);
 }
 
 GearToothSource::~GearToothSource()

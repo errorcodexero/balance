@@ -7,7 +7,9 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-#define	PID_P	0.010F
+#define	USE_PID
+
+#define	PID_P	0.050F
 #define	PID_I	0.000F
 #define	PID_D	0.000F
 
@@ -53,7 +55,6 @@ Shooter::~Shooter()
     Stop();
 }
 
-
 void Shooter::InitShooter()
 {
     Stop();
@@ -88,32 +89,32 @@ void Shooter::Start( float speed )
     sensor_top.Start();
 
     // set the initial speed
-#if 1 // debug
-    motor_bottom.PIDWrite( speed_bottom / 5000. );
-    motor_bottom.SetSafetyEnabled(false);
-    motor_top.PIDWrite( speed_top / 5000. );
-    motor_top.SetSafetyEnabled(false);
-#else
+#ifdef USE_PID
     pid_bottom.SetPID( pid_p, pid_i, pid_d );
     pid_top.SetPID( pid_p, pid_i, pid_d );
     pid_bottom.SetSetpoint( speed_bottom );
     pid_top.SetSetpoint( speed_top );
     pid_bottom.Enable();
     pid_top.Enable();
+#else // debug
+    motor_bottom.PIDWrite( speed_bottom / 1200. );
+    motor_bottom.SetSafetyEnabled(false);
+    motor_top.PIDWrite( speed_top / 1200. );
+    motor_top.SetSafetyEnabled(false);
 #endif
     running = true;
 }
 
 void Shooter::Stop()
 {
-#if 1 // debug
+#ifdef USE_PID
+    pid_bottom.Disable();
+    pid_top.Disable();
+#else // debug
     motor_bottom.PIDWrite( 0.0F );
     motor_bottom.SetSafetyEnabled(false);
     motor_top.PIDWrite( 0.0F );
     motor_top.SetSafetyEnabled(false);
-#else
-    pid_bottom.Disable();
-    pid_top.Disable();
 #endif
     sensor_bottom.Stop();
     sensor_top.Stop();
@@ -124,7 +125,7 @@ void Shooter::Run()
 {
     static int logCount = 0;
     if (IsRunning()) {
-	if (++logCount > 100) {
+	if (++logCount > 10) {
 	    logCount = 0;
 	    SmartDashboard::Log( sensor_bottom.PIDGet(), "bot" );
 	    SmartDashboard::Log( sensor_top.PIDGet(), "top" );

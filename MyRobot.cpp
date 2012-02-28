@@ -7,8 +7,8 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-    joy_right( 1, "Right" ),
-    joy_left(  2, "Left" ),
+    joy_right( 1 ),
+    joy_left(  2 ),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
@@ -32,7 +32,6 @@ MyRobot::MyRobot() :
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
     balance( drive, pitch ),
     pickup( ball_pickup, ball_loaded ),
-    lastPickup( 0 ),
     shooter( shooter_bottom, shooter_top, shot_speed_bottom, shot_speed_top )
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
