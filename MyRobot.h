@@ -66,15 +66,7 @@ private:
     // Ball picker-upper motor, bidirectional
     Relay ball_pickup;
 
-    // Ball-in-place detector
-    xCounter ball_loaded;
-
-    // Ball injector
-    Solenoid ball_injector;
-
-    // Shooter wheel
-    Victor shooter_bottom, shooter_top;
-    xGearTooth shot_speed_bottom, shot_speed_top;
+    // Shooter components are encapsulated in Shooter class
 
     // Camera illuminator on/off
     Relay illuminator;

@@ -76,7 +76,7 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
-    shooter.Set(dsa3);
+    shooter.SetSpeed(dsa3);
     switch (dsa4) {
     case 2:	// up, start
 	shooter.Start();
@@ -89,10 +89,10 @@ void MyRobot::TeleopPeriodic()
     }
     shooter.Run();
 
-    // This should be interlocked with the
-    // "shooter running" and "shooter up to speed"
-    // and then timed to insure a full cycle.
-    ball_injector.Set( dsd1 );
+    // This will repeat fire if the button is held down, OK?
+    if (dsd1) {
+	shooter.Shoot();
+    }
 
 #if 0
     if (dsd2) {

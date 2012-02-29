@@ -12,10 +12,11 @@
 class Shooter
 {
 private:
-    /*PIDOutput*/ Victor &motor_bottom;
-    /*PIDOutput*/ Victor &motor_top;
-    /*PIDSource*/ xGearTooth &geartooth_bottom;
-    /*PIDSource*/ xGearTooth &geartooth_top;
+    /*PIDOutput*/ Victor motor_bottom;
+    /*PIDOutput*/ Victor motor_top;
+    /*PIDSource*/ xGearTooth geartooth_bottom;
+    /*PIDSource*/ xGearTooth geartooth_top;
+    Solenoid injector;
 
     // operating parameters configured from preferences/SmartDashboard
     float pid_p, pid_i, pid_d;
@@ -23,24 +24,33 @@ private:
     // motor speed controllers
     xPIDController pid_bottom, pid_top;
 
+    Timer shot_timer;
+
     // runtime state
     float speed_bottom, speed_top;
     bool running;
+    enum { kIdle, kShooting, kResetting } shooting;
 
 public:
-    Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
-    	     /*PIDSource*/ xGearTooth &gb, /*PIDSource*/ xGearTooth &gt );
+    Shooter( int bottom_motor_channel, int top_motor_channel,
+    	     int bottom_geartooth_channel, int top_geartooth_channel,
+	     int injector_channel );
     ~Shooter();
     
     void InitShooter();
 
-    void Set( float speed );
-    void Start();
-    void Stop();
-    void Run();
+    void SetSpeed( float speed );	// set motor speed
+    void Start();			// start the motors
+    void Stop();			// stop the motors
+
+    void Shoot();			// shoot a ball
+    void Reset();			// reset injector for next shot
+
+    void Run();				// update motor and injector status
 
     bool IsRunning();
-    bool OnTarget();
+    bool IsShooting();
+    bool IsReady();
 };
 
 #endif // _SHOOTER_H_

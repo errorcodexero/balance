@@ -18,12 +18,6 @@ MyRobot::MyRobot() :
     compressor( 1, 1 ),
     cowcatcher( 1 ),
     ball_pickup( 2, Relay::kBothDirections ),
-    ball_loaded( 2 ),
-    ball_injector( 2 ),
-    shooter_bottom( 1 ),
-    shooter_top( 2 ),
-    shot_speed_bottom( 3, false ),
-    shot_speed_top( 4, false ),
     illuminator( 3, Relay::kForwardOnly ),
     driveChooser(),
     driveMode( kFlightStick ),
@@ -31,8 +25,8 @@ MyRobot::MyRobot() :
     controlMode( kVoltage ),
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
     balance( drive, pitch ),
-    pickup( ball_pickup, ball_loaded ),
-    shooter( shooter_bottom, shooter_top, shot_speed_bottom, shot_speed_top ),
+    pickup( ball_pickup ),
+    shooter( 1, 2, 3, 4, 2 ),
     target()
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
@@ -69,7 +63,6 @@ void MyRobot::Safe()
     pickup.Stop();
     shooter.Stop();
     cowcatcher.Set( false );
-    ball_injector.Set( false );
 }
 
 void MyRobot::DisableMotor( CANJaguar& motor )

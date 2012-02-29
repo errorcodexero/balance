@@ -17,19 +17,25 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 #define	MAX_PPS		1200.0F	// max pulses per second from gear tooth sensor
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
-#define	PID_P		0.020F
+#define	PID_P		0.020F	// initial PID constants, can be tuned in preferences
 #define	PID_I		0.000F
 #define	PID_D		0.000F
+#define SHOT_TIME	2.0F	// time to cycle injector up or down
 
-Shooter::Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
-		  /*PIDSource*/ xGearTooth &gb, /*PIDSource*/ xGearTooth &gt ) :
-    motor_bottom(mb), motor_top(mt),
-    geartooth_bottom(gb), geartooth_top(gt),
+Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
+		  int bottom_geartooth_channel, int top_geartooth_channel,
+		  int injector_channel ) :
+    motor_bottom(bottom_motor_channel),
+    motor_top(top_motor_channel),
+    geartooth_bottom(bottom_geartooth_channel),
+    geartooth_top(top_geartooth_channel),
+    injector(injector_channel),
     pid_p(0.0F), pid_i(0.0F), pid_d(0.0F),
     pid_bottom( pid_p, pid_i, pid_d, &geartooth_bottom, &motor_bottom ),
     pid_top( pid_p, pid_i, pid_d, &geartooth_top, &motor_top ),
     speed_bottom(0.0F), speed_top(0.0F),
-    running(false)
+    running(false),
+    shooting(kIdle)
 {
     Preferences *pref = Preferences::GetInstance();
     bool saveNeeded = false;
@@ -93,11 +99,9 @@ void Shooter::InitShooter()
 
     geartooth_bottom.SetAverageSize( 8 );
     geartooth_top.SetAverageSize( 8 );
-
-    Set( 0.0F );
 }
 
-void Shooter::Set( float speed )
+void Shooter::SetSpeed( float speed )
 {
     // set motor speeds
     speed_bottom = speed * MAX_PPS;
@@ -138,6 +142,26 @@ void Shooter::Stop()
     geartooth_bottom.Stop();
     geartooth_top.Stop();
     running = false;
+
+    Reset();
+}
+
+void Shooter::Shoot()
+{
+    if (IsReady()) {
+	injector.Set( true );
+	shot_timer.Start();
+	shooting = kShooting;
+    }
+}
+
+void Shooter::Reset()
+{
+    if (shooting != kShooting) {
+	injector.Set(false);
+	shot_timer.Start();
+	shooting = kResetting;
+    }
 }
 
 void Shooter::Run()
@@ -156,6 +180,24 @@ void Shooter::Run()
     } else {
 	logCount = 0;
     }
+
+    switch (shooting) {
+    case kIdle:
+	break;
+    case kShooting:
+	if (shot_timer.HasPeriodPassed(SHOT_TIME)) {
+	    injector.Set(false);
+	    shooting = kResetting;
+	}
+	break;
+    case kResetting:
+	if (shot_timer.HasPeriodPassed(SHOT_TIME)) {
+	    shot_timer.Stop();
+	    shot_timer.Reset();
+	    shooting = kIdle;
+	}
+	break;
+    }
 }
 
 bool Shooter::IsRunning()
@@ -163,8 +205,13 @@ bool Shooter::IsRunning()
     return (running);
 }
 
-bool Shooter::OnTarget()
+bool Shooter::IsShooting()
 {
-    return (pid_bottom.OnTarget() && pid_top.OnTarget());
+    return (shooting != kIdle);
+}
+
+bool Shooter::IsReady()
+{
+    return (IsRunning() && !IsShooting() && pid_bottom.OnTarget() && pid_top.OnTarget());
 }
 

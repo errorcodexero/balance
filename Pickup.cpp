@@ -7,9 +7,8 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-Pickup::Pickup( Relay &motor_relay, xCounter &ball_counter ) :
+Pickup::Pickup( Relay &motor_relay ) :
     relay( motor_relay ),
-    counter( ball_counter ),
     direction( 0 )
 {
     Stop();

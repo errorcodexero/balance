@@ -10,7 +10,7 @@
 class Pickup
 {
 public:
-    Pickup( Relay &motor_relay, xCounter &ball_counter );
+    Pickup( Relay &motor_relay );
     ~Pickup();
 
     void Forward();
@@ -20,14 +20,9 @@ public:
     void SetDirection( int d );
     int GetDirection();
 
-    // TBD: add e.g. IsBallInPosition
-
 private:
     // motor controller
     Relay &relay;
-
-    // ball-in-place sensor
-    xCounter &counter;
 
     // runtime control
     int direction;	// -1 reverse, 0 stopped, 1 forward
