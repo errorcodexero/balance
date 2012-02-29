@@ -2,11 +2,12 @@
 // Steve Tarr - team 1425 mentor - 11-Feb-2012
 
 #include <WPILib.h>
+#include "xCounter.h"
 #include "Pickup.h"
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-Pickup::Pickup( Relay &motor_relay, Counter &ball_counter ) :
+Pickup::Pickup( Relay &motor_relay, xCounter &ball_counter ) :
     relay( motor_relay ),
     counter( ball_counter ),
     direction( 0 )

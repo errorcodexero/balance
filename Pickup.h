@@ -5,11 +5,12 @@
 #define _PICKUP_H_
 
 #include <WPILib.h>
+#include "xCounter.h"
 
 class Pickup
 {
 public:
-    Pickup( Relay &motor_relay, Counter &ball_counter );
+    Pickup( Relay &motor_relay, xCounter &ball_counter );
     ~Pickup();
 
     void Forward();
@@ -26,7 +27,7 @@ private:
     Relay &relay;
 
     // ball-in-place sensor
-    Counter &counter;
+    xCounter &counter;
 
     // runtime control
     int direction;	// -1 reverse, 0 stopped, 1 forward

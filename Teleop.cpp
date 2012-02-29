@@ -79,9 +79,12 @@ void MyRobot::TeleopPeriodic()
 
     switch (dsa4) {
     case 2:	// up, start
-	shooter.Start(dsa3);
+	shooter.Start();
+	shooter.Set(dsa3);
+	shooter.Run();
 	break;
     case 1:	// center-off, no change
+	shooter.Set(dsa3);
 	shooter.Run();
 	break;
     case 0:	// down, stop
@@ -95,6 +98,14 @@ void MyRobot::TeleopPeriodic()
 	ball_injector.Set( false );
     }
 
+#if 0
+    if (dsd2) {
+	if (target.GetImage()) {
+	    target.FindParticles();
+	    target.SaveImages();
+	}
+    }
+#endif
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);
@@ -125,10 +136,12 @@ void MyRobot::TeleopPeriodic()
 	balance.Run();
     }
 
+#if 0
     SmartDashboard::Log( motor_right_1.Get(), "Right1" );
     SmartDashboard::Log( motor_right_2.Get(), "Right2" );
     SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
     SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
+#endif
 }
 
 void MyRobot::TeleopContinuous()

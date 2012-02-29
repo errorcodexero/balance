@@ -32,7 +32,8 @@ MyRobot::MyRobot() :
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
     balance( drive, pitch ),
     pickup( ball_pickup, ball_loaded ),
-    shooter( shooter_bottom, shooter_top, shot_speed_bottom, shot_speed_top )
+    shooter( shooter_bottom, shooter_top, shot_speed_bottom, shot_speed_top ),
+    target()
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
 

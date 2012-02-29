@@ -5,10 +5,13 @@
 #define _MYROBOT_H_
 
 #include <WPILib.h>
-#include "GearToothSource.h"
+#include "xCounter.h"
+#include "xGearTooth.h"
+#include "xPIDController.h"
 #include "Balance.h"
 #include "Pickup.h"
 #include "Shooter.h"
+#include "Target.h"
 
 class MyRobot : public IterativeRobot
 {
@@ -64,14 +67,14 @@ private:
     Relay ball_pickup;
 
     // Ball-in-place detector
-    Counter ball_loaded;
+    xCounter ball_loaded;
 
     // Ball injector
     Solenoid ball_injector;
 
     // Shooter wheel
     Victor shooter_bottom, shooter_top;
-    GearToothSource shot_speed_bottom, shot_speed_top;
+    xGearTooth shot_speed_bottom, shot_speed_top;
 
     // Camera illuminator on/off
     Relay illuminator;
@@ -100,6 +103,9 @@ private:
 
     // Shooter control
     Shooter shooter;
+
+    // Targeting
+    Target target;
 
     ///////////////////////////////////////////////////////////////////
     // helper functions

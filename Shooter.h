@@ -5,21 +5,23 @@
 #define _SHOOTER_H_
 
 #include <WPILib.h>
-#include "GearToothSource.h"
+#include "xCounter.h"
+#include "xGearTooth.h"
+#include "xPIDController.h"
 
 class Shooter
 {
 private:
     /*PIDOutput*/ Victor &motor_bottom;
     /*PIDOutput*/ Victor &motor_top;
-    /*PIDSource*/ GearToothSource &sensor_bottom;
-    /*PIDSource*/ GearToothSource &sensor_top;
+    /*PIDSource*/ xGearTooth &geartooth_bottom;
+    /*PIDSource*/ xGearTooth &geartooth_top;
 
     // operating parameters configured from preferences/SmartDashboard
     float pid_p, pid_i, pid_d;
 
     // motor controllers
-    PIDController pid_bottom, pid_top;
+    xPIDController pid_bottom, pid_top;
 
     // runtime control
     float speed_bottom, speed_top;
@@ -27,12 +29,13 @@ private:
 
 public:
     Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
-    	     /*PIDSource*/ GearToothSource &gb, /*PIDSource*/ GearToothSource &gt );
+    	     /*PIDSource*/ xGearTooth &gb, /*PIDSource*/ xGearTooth &gt );
     ~Shooter();
     
     void InitShooter();
 
-    void Start( float speed );
+    void Set( float speed );
+    void Start();
     void Stop();
     void Run();
 
