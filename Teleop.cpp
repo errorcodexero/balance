@@ -10,8 +10,9 @@ void MyRobot::TeleopInit()
 {
     Safe();
     compressor.Start();
-
     balance.InitBalance();
+    shooter.InitShooter();
+
     driveMode = (DriveType) (int) driveChooser.GetSelected();
     controlMode = (ControlMode) (int) controlChooser.GetSelected();
     if (controlMode == kSpeed)
@@ -41,18 +42,16 @@ void MyRobot::TeleopPeriodic()
     bool rightTop     = joy_right.GetTop();
 
     DriverStation *pDS = DriverStation::GetInstance();
-    int dsa1 = (int)((pDS->GetAnalogIn(1) * 2.0 / 3.3) + 0.5);	// 3-position switch, pickup
-    int dsa2 = (int)((pDS->GetAnalogIn(2) * 2.0 / 3.3) + 0.5);	// 3-position switch, cowcatcher
-    float dsa3 = (pDS->GetAnalogIn(3) * 1200.0 / 3.3);		// potentiometer, shot speed?
-    int dsa4 = (int)((pDS->GetAnalogIn(4) * 2.0 / 3.3) + 0.5);	// 3-position switch, shooter
+    DriverStationEnhancedIO *pIO = &pDS->GetEnhancedIO();
+    int dsa1 = (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5);	// 3-position switch, pickup
+    int dsa2 = (int)(pIO->GetAnalogInRatio(2) * 2.0 + 0.5);	// 3-position switch, cowcatcher
+    float dsa3 = pIO->GetAnalogInRatio(3);			// potentiometer, shot speed
+    int dsa4 = (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5);	// 3-position switch, shooter
+    int dsa5 = (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5);	// 3-position switch, target height
 
-// dsa5 isn't usable: WPILib doesn't allow analog channels 5-8
-// even though they show up on the driver station
-//  int dsa5 = (int)((pDS->GetAnalogIn(5) * 2.0 / 3.3) + 0.5);	// 3-position switch, target height
-
-    bool dsd1 = pDS->GetDigitalIn(1);	// pushbutton, fire control
-    bool dsd2 = pDS->GetDigitalIn(2);	// key switch, teach mode
-    bool dsd3 = pDS->GetDigitalIn(3);	// pushbotton, store
+    bool dsd1 = pIO->GetDigital(1);	// pushbutton, fire control
+    bool dsd2 = pIO->GetDigital(2);	// key switch, teach mode
+    bool dsd3 = pIO->GetDigital(3);	// pushbotton, store
 
     switch (dsa1) {
     case 2:	// up, forward
@@ -77,26 +76,23 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
+    shooter.Set(dsa3);
     switch (dsa4) {
     case 2:	// up, start
 	shooter.Start();
-	shooter.Set(dsa3);
-	shooter.Run();
 	break;
     case 1:	// center-off, no change
-	shooter.Set(dsa3);
-	shooter.Run();
 	break;
     case 0:	// down, stop
 	shooter.Stop();
 	break;
     }
+    shooter.Run();
 
-    if (dsd1) {
-	ball_injector.Set( true );
-    } else {
-	ball_injector.Set( false );
-    }
+    // This should be interlocked with the
+    // "shooter running" and "shooter up to speed"
+    // and then timed to insure a full cycle.
+    ball_injector.Set( dsd1 );
 
 #if 0
     if (dsd2) {

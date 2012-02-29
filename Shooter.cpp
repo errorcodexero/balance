@@ -9,9 +9,17 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-#define	PID_P	0.050F
-#define	PID_I	0.000F
-#define	PID_D	0.000F
+// motor unloaded max speed: 20,700 RPM
+// gear reduction 4:1
+// sensor ration 1:15 (number of teeth on the sprocket)
+// so theoretical unloaded max PPS is approx. 1300
+// measured max PPS is approx. 1000
+
+#define	MAX_PPS		1200.0F	// max pulses per second from gear tooth sensor
+#define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
+#define	PID_P		0.020F
+#define	PID_I		0.000F
+#define	PID_D		0.000F
 
 Shooter::Shooter( /*PIDOutput*/ Victor &mb, /*PIDOutput*/ Victor &mt,
 		  /*PIDSource*/ xGearTooth &gb, /*PIDSource*/ xGearTooth &gt ) :
@@ -69,14 +77,18 @@ void Shooter::InitShooter()
     printf("InitShooter: pid_i = %f\n", pid_i);
     printf("InitShooter: pid_d = %f\n", pid_d);
 
-    pid_bottom.SetInputRange( 0.0F, 1200.F );
+    pid_bottom.SetInputRange( 0.0F, MAX_PPS );
+    // PWMController doesn't like it when we use "1.0F" as the maximum.
     pid_bottom.SetOutputRange( 0.0F, 0.98F );
-    pid_bottom.SetTolerance( 3.0F );
+    // This needs some calibration...
+    pid_bottom.SetTolerance( 5.0F );
     pid_bottom.SetPID( pid_p, pid_i, pid_d );
 
-    pid_top.SetInputRange( 0.0F, 1200.F );
+    pid_top.SetInputRange( 0.0F, MAX_PPS );
+    // PWMController doesn't like it when we use "1.0F" as the maximum.
     pid_top.SetOutputRange( 0.0F, 0.98F );
-    pid_top.SetTolerance( 3.0F );
+    // This needs some calibration...
+    pid_top.SetTolerance( 5.0F );
     pid_top.SetPID( pid_p, pid_i, pid_d );
 
     geartooth_bottom.SetAverageSize( 8 );
@@ -88,18 +100,15 @@ void Shooter::InitShooter()
 void Shooter::Set( float speed )
 {
     // set motor speeds
-    speed_bottom = speed;
-    speed_top = speed * 0.7;	// empirical ratio
+    speed_bottom = speed * MAX_PPS;
     pid_bottom.SetSetpoint( speed_bottom );
+    speed_top = speed_bottom * DRIVE_RATIO;
     pid_top.SetSetpoint( speed_top );
 }
 
 void Shooter::Start()
 {
     if (IsRunning()) return;
-
-    // load configuration from preferences file or SmartDashboard
-    InitShooter();
 
     // enable the motor speed sensors (counters)
     geartooth_bottom.Start();
@@ -136,12 +145,12 @@ void Shooter::Run()
     static int logCount = 0;
     if (IsRunning()) {
 	if (++logCount >= 20) {
-	    SmartDashboard::Log(speed_bottom, "bot set");
-	    SmartDashboard::Log(pid_bottom.GetInput(), "bot spd");
-	    SmartDashboard::Log(pid_bottom.GetError(), "bot err");
-	    SmartDashboard::Log(speed_top, "top set");
-	    SmartDashboard::Log(pid_top.GetInput(), "top spd");
-	    SmartDashboard::Log(pid_top.GetError(), "top err");
+	    SmartDashboard::Log(speed_bottom, "b set");
+	    SmartDashboard::Log(pid_bottom.GetInput(), "b spd");
+	    SmartDashboard::Log(pid_bottom.GetError(), "b err");
+	    SmartDashboard::Log(speed_top, "t set");
+	    SmartDashboard::Log(pid_top.GetInput(), "t spd");
+	    SmartDashboard::Log(pid_top.GetError(), "t err");
 	    logCount = 0;
 	}
     } else {

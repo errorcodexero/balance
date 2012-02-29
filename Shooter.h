@@ -20,10 +20,10 @@ private:
     // operating parameters configured from preferences/SmartDashboard
     float pid_p, pid_i, pid_d;
 
-    // motor controllers
+    // motor speed controllers
     xPIDController pid_bottom, pid_top;
 
-    // runtime control
+    // runtime state
     float speed_bottom, speed_top;
     bool running;
 

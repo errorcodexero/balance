@@ -133,17 +133,13 @@ void xPIDController::Calculate()
 			}
 
 			double potentialIGain = (m_totalError + m_error) * m_I;
-			if (potentialIGain < m_maximumOutput)
-			{
-				if (potentialIGain > m_minimumOutput)
-					m_totalError += m_error;
-				else
-					m_totalError = m_minimumOutput / m_I;
-			}
-			else
-			{
+
+			if (potentialIGain < m_minimumOutput)
+				m_totalError = m_minimumOutput / m_I;
+			else if (potentialIGain > m_maximumOutput)
 				m_totalError = m_maximumOutput / m_I;
-			}
+			else
+				m_totalError += m_error;
 
 			m_result = m_P * m_error + m_I * m_totalError + m_D * (m_error - m_prevError);
 			m_prevError = m_error;

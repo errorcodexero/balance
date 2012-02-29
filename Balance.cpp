@@ -176,9 +176,6 @@ void Balance::Start( bool startReverse, bool startOnRamp )
     // once started, keep running with the original parameters
     if (IsRunning()) return;
 
-    // load configuration from preferences file or SmartDashboard
-    InitBalance();
-
     // set the initial speed and position
     if (startOnRamp) {
 	state = kOnRamp;
