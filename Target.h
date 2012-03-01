@@ -15,6 +15,7 @@ public:
 
     bool GetImage();
     int FindParticles();
+    bool AnalyzeParticles();
 
     void SaveImages();		// for debugging
 
@@ -38,6 +39,9 @@ private:
 	double height;
 	double width;
     } particles[4];
+
+    Particle *pTop, *pBottom, *pLeft, *pRight;
+
     int num_particles;
 
     // processing constants

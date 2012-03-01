@@ -4,6 +4,7 @@
 #include <WPILib.h>
 #include "Target.h"
 #include "Version.h"
+#include <math.h>
 
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
@@ -40,7 +41,7 @@ Target::Target()
     filterCriteria[0].exclude    = TRUE;
 
     filterOptions.rejectMatches = FALSE;
-    filterOptions.rejectBorder  = TRUE;
+    filterOptions.rejectBorder  = FALSE;
     filterOptions.fillHoles     = TRUE;
     filterOptions.connectivity8 = TRUE;
 }
@@ -71,6 +72,32 @@ bool Target::GetImage()
     return true;
 }
 
+void Target::SaveImages()
+{
+    long then = (long) GetFPGATime();
+
+    if (!imaqWriteFile(cameraImage.GetImaqImage(), "/tmp/vision00-camera.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision00-camera.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+    if (!imaqWriteFile(monoImage.GetImaqImage(), "/tmp/vision01-monoImage.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision01-luminance.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+#if 0
+    if (!imaqWriteFile(equalized.GetImaqImage(), "/tmp/vision02-equalized.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision02-equalized.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+#endif
+    if (!imaqWriteFile(filtered.GetImaqImage(), "/tmp/vision03-filtered.bmp", falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision03-filtered.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+
+    long now = (long) GetFPGATime();
+    printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
+}
 
 int Target::FindParticles()
 {
@@ -158,27 +185,35 @@ int Target::FindParticles()
     printf("%s: returning %d particles\n", __FUNCTION__, num_particles);
     for (int i = 0; i < num_particles; i++) {
 	Particle *p = &particles[i];
-	printf("  particle %d index %d size %g x %g y %g\n",
-		i, p->index, p->size, p->xCenter, p->yCenter);
+	printf("  particle %d size %g x %g y %g\n",
+		p->index, p->size, p->xCenter, p->yCenter);
+    }
+
+    return num_particles;
+}
+
+bool Target::AnalyzeParticles()
+{
+    if (num_particles < 4) {
+	printf("ERROR: num_particles < 4, no analysis possible\n");
+	return false;
     }
 
     // image quality tests:
     //
-    // 1) The four largest particles should be approximately the same size.  If not,
-    // one or more of the particles is partially or completely outside the field of view,
-    // or we didn't identify the particles correctly.
+    // 1) There should be some space between the outer edge of each particle and the edge
+    // of the image.  If not, one of the particles is partially outside the field of view.
     //
-    // 2) The aspect ratio (height to width ratio) of each particle should be approximately
+    // 2) The four largest particles should be approximately the same size.  If not,
+    // one or more of the particles is partially hidden or we didn't identify the particles
+    // correctly.
+    //
+    // 3) The aspect ratio (height to width ratio) of each particle should be approximately
     // that of the target rectangles.
     //
-    // 3) The image center position calculated from the inside edges of the particles,
+    // 4) The image center position calculated from the inside edges of the particles,
     // the center of mass of the particles, and the outside edges of the particles should
-    // be approximately the same.  If not, one or more of the particle images is clipped
-    // or distorted.  We don't want to aim for that target!
-
-    if (num_particles < 4) {
-	printf("WARNING: num_particles < 4\n");
-    }
+    // be approximately the same.
 
     for (int i = 1; i < num_particles; i++) {
 	Particle *p = &particles[i];
@@ -188,78 +223,78 @@ int Target::FindParticles()
 	}
     }
 
-    // Sort the particles by position, based on their outside edges.
-    int top = 0;
-    double top_y = particles[0].topBound;
-    int bottom = 0;
-    double bottom_y = particles[0].bottomBound;
-    int left = 0;
-    double left_x = particles[0].leftBound;
-    int right = 0;
-    double right_x = particles[0].rightBound;
+    // Sort the particles by position, based on their inside edges.
+    pTop = pBottom = pLeft = pRight = &particles[0];
 
     for (int i = 1; i < num_particles; i++) {
 	Particle *p = &particles[i];
-	if (p->topBound > top_y) {
-	    top = i;
-	    top_y = p->topBound;
+	if (p->bottomBound > pTop->bottomBound) {
+	    pTop = p;
 	}
-	if (p->bottomBound < bottom_y) {
-	    bottom = i;
-	    bottom_y = p->bottomBound;
+	if (p->topBound < pBottom->topBound) {
+	    pBottom = p;
 	}
-	if (p->leftBound < left_x) {
-	    left = i;
-	    left_x = p->leftBound;
+	if (p->rightBound < pLeft->rightBound) {
+	    pLeft = p;
 	}
-	if (p->rightBound > right_x) {
-	    right = i;
-	    right_x = p->rightBound;
+	if (p->leftBound > pRight->leftBound) {
+	    pRight = p;
 	}
-
-	double outside_y = (top_y + bottom_y) / 2.;
-	double outside_x = (left_x + right_x) / 2.;
-
-	double center_y = (particles[top].yCenter + particles[bottom].yCenter) / 2.;
-	double center_x = (particles[left].xCenter + particles[right].xCenter) / 2.;
-
-	double inside_y = (particles[top].bottomBound + particles[bottom].topBound) / 2.;
-	double inside_x = (particles[left].rightBound + particles[right].leftBound) / 2.;
-
-	printf("top %d left %d bottom %d right %d\n", top, left, bottom, right);
-	printf("outside y %g x %g\n", outside_y, outside_x);
-	printf("center  y %g x %g\n", center_y,  center_x);
-	printf("inside  y %g x %g\n", inside_y,  inside_x);
     }
 
-    return num_particles;
+    printf("top %d left %d bottom %d right %d\n",
+	   pTop->index, pLeft->index, pBottom->index, pRight->index);
+
+    // Find the center of the target rectangle based on the outside edges of the particles.
+    double outside_y = (pTop->topBound + pBottom->bottomBound) / 2.;
+    double outside_x = (pLeft->leftBound + pRight->rightBound) / 2.;
+    printf("outside y %g x %g\n", outside_y, outside_x);
+
+    // Find the center of the target rectangle based on the center of the particles.
+    double center_y = (pTop->yCenter + pBottom->yCenter + pLeft->yCenter + pRight->yCenter) / 4.;
+    double center_x = (pTop->xCenter + pBottom->xCenter + pLeft->xCenter + pRight->xCenter) / 4.;
+    printf("center  y %g x %g\n", center_y,  center_x);
+
+    // Find the center of the target rectangle based on the inside edges of the particles.
+    double inside_y = (pTop->bottomBound + pBottom->topBound) / 2.;
+    double inside_x = (pLeft->rightBound + pRight->leftBound) / 2.;
+    printf("inside  y %g x %g\n", inside_y,  inside_x);
+
+    // Find the center of the target rectangle based on the center of the particles
+    // that (should) lie on the *midlines* of the target.
+    double midline_y = (pLeft->yCenter + pRight->yCenter) / 2.;
+    double midline_x = (pTop->xCenter + pBottom->xCenter) / 2.;
+    printf("midline y %g x %g\n", inside_y,  inside_x);
+
+////////////////////////////////////
+
+    //Constants used for calculation of position
+    const double pi = 3.1415926535;
+    const double FOV = pi / 4.;
+    const double xResolution = 640.;
+    const double yResolution = 480.;
+    const double hoopWidthHalf = 39.375;
+
+    // Ben's "pCenter" is my "midline_x"
+    double pCenter = ((pTop->xCenter + pBottom->xCenter) / 2);
+
+    // (positive or negative) angle between camera and target centerline
+    double angle = ((xResolution / 2) - pCenter) * (FOV / xResolution);
+
+    // (positive) angle between outer edge of left-hand target and target centerline
+    double angleLeft = (pCenter - pLeft->leftBound) * (FOV / xResolution);
+
+    // (positive) angle between target centerline and outer edge of right-hand target
+    double angleRight = (pRight->rightBound - pCenter) * (FOV / xResolution);
+
+    printf("values: %g, %g, %g\n", angleLeft, angleRight, angle);
+
+    double leftmostAngle = (pi / 2.) - (angleLeft - angle);
+    double rightmostAngle = (pi / 2.) - (angleRight - angle);
+    double calcDistanceLeft = sin(leftmostAngle) * (hoopWidthHalf / sin(angleLeft));
+    double calcDistanceRight = sin(rightmostAngle) * (hoopWidthHalf / sin(angleRight));
+    double distance = (calcDistanceLeft + calcDistanceRight) / 2.;
+    printf("distances: %g, %g %g\n", calcDistanceLeft, calcDistanceRight, distance);
+
+    return true;
 }
-
-
-void Target::SaveImages()
-{
-    long then = (long) GetFPGATime();
-
-    if (!imaqWriteFile(cameraImage.GetImaqImage(), "/tmp/vision00-camera.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision00-camera.bmp\") FAILED\n", __FUNCTION__);
-	// ignore the error
-    }
-    if (!imaqWriteFile(monoImage.GetImaqImage(), "/tmp/vision01-monoImage.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision01-luminance.bmp\") FAILED\n", __FUNCTION__);
-	// ignore the error
-    }
-#if 0
-    if (!imaqWriteFile(equalized.GetImaqImage(), "/tmp/vision02-equalized.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision02-equalized.bmp\") FAILED\n", __FUNCTION__);
-	// ignore the error
-    }
-#endif
-    if (!imaqWriteFile(filtered.GetImaqImage(), "/tmp/vision03-filtered.bmp", falseColor)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision03-filtered.bmp\") FAILED\n", __FUNCTION__);
-	// ignore the error
-    }
-
-    long now = (long) GetFPGATime();
-    printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
-}
-

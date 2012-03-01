@@ -79,8 +79,8 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
-    float s = 0.650 + (dsa3 * 0.250);
-    shooter.SetSpeed(dsa3);
+    float s = 0.500 + (dsa3 * 0.400);
+    shooter.SetSpeed(s);
     switch (dsa4) {
     case 2:	// up, start
 	shooter.Start();
