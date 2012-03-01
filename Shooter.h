@@ -20,6 +20,9 @@ private:
 
     // operating parameters configured from preferences/SmartDashboard
     float pid_p, pid_i, pid_d;
+    float drive_ratio;
+    float tolerance;
+    float shot_time;
 
     // motor speed controllers
     xPIDController pid_bottom, pid_top;
@@ -38,6 +41,7 @@ public:
     ~Shooter();
     
     void InitShooter();
+    void Log();
 
     void SetSpeed( float speed );	// set motor speed
     void Start();			// start the motors

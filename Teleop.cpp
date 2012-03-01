@@ -25,6 +25,8 @@ void MyRobot::TeleopInit()
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Teleop Mode");
     lcd->UpdateLCD();
+
+    target.GetImage();
 }
 
 void MyRobot::TeleopPeriodic()
@@ -41,13 +43,14 @@ void MyRobot::TeleopPeriodic()
     bool rightTrigger = joy_right.GetTrigger();
     bool rightTop     = joy_right.GetTop();
 
+
     DriverStation *pDS = DriverStation::GetInstance();
     DriverStationEnhancedIO *pIO = &pDS->GetEnhancedIO();
     int dsa1 = (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5);	// 3-position switch, pickup
     int dsa2 = (int)(pIO->GetAnalogInRatio(2) * 2.0 + 0.5);	// 3-position switch, cowcatcher
     float dsa3 = pIO->GetAnalogInRatio(3);			// potentiometer, shot speed
     int dsa4 = (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5);	// 3-position switch, shooter
-    int dsa5 = (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5);	// 3-position switch, target height
+    int dsa5 = (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5);	// 3-position switch, illuminator
 
     bool dsd1 = pIO->GetDigital(1);	// pushbutton, fire control
     bool dsd2 = pIO->GetDigital(2);	// key switch, teach mode
@@ -76,6 +79,7 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
+    float s = 0.650 + (dsa3 * 0.250);
     shooter.SetSpeed(dsa3);
     switch (dsa4) {
     case 2:	// up, start
@@ -94,14 +98,14 @@ void MyRobot::TeleopPeriodic()
 	shooter.Shoot();
     }
 
-#if 0
+    illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
+
     if (dsd2) {
 	if (target.GetImage()) {
 	    target.FindParticles();
 	    target.SaveImages();
 	}
     }
-#endif
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);

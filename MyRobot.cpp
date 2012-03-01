@@ -46,7 +46,7 @@ void MyRobot::RobotInit()
 {
     balance.InitBalance();
     shooter.InitShooter();
-    DisableMotors();
+    Safe();
 
     SmartDashboard::Log("Initialized", "Robot State");
 
