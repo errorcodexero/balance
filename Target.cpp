@@ -46,10 +46,10 @@ void Target::TargetInit()
     }
 
     m_filterCriteria[0].parameter  = IMAQ_MT_PARTICLE_AND_HOLES_AREA;
-    m_filterCriteria[0].lower      = 0;
-    m_filterCriteria[0].upper      = 400;
+    m_filterCriteria[0].lower      = 640*480 / 100;
+    m_filterCriteria[0].upper      = 640*480 / 3;
     m_filterCriteria[0].calibrated = FALSE;
-    m_filterCriteria[0].exclude    = TRUE;
+    m_filterCriteria[0].exclude    = FALSE;
 
     m_filterOptions.rejectMatches = FALSE;
     m_filterOptions.rejectBorder  = FALSE;
@@ -88,46 +88,46 @@ Target::~Target()
 
 Target::TargetLocation Target::GetTarget( TargetID which )
 {
-    TargetLocation target;
+    TargetLocation location;
     switch (which) {
     case kCenter:
 	{
 	    Synchronized mutex(m_sem);
-	    target = m_targetCenter;
+	    location = m_targetCenter;
 	}
 	break;
     case kTop:
 	{
 	    Synchronized mutex(m_sem);
-	    target = m_targetTop;
+	    location = m_targetTop;
 	}
 	break;
     case kBottom:
 	{
 	    Synchronized mutex(m_sem);
-	    target = m_targetBottom;
+	    location = m_targetBottom;
 	}
 	break;
     case kLeft:
 	{
 	    Synchronized mutex(m_sem);
-	    target = m_targetLeft;
+	    location = m_targetLeft;
 	}
 	break;
     case kRight:
 	{
 	    Synchronized mutex(m_sem);
-	    target = m_targetRight;
+	    location = m_targetRight;
 	}
 	break;
     default:
-	target.id = which;
-	target.angle = 0.0;
-	target.distance = 0.0;
-	target.valid = false;
+	location.id = which;
+	location.angle = 0.0;
+	location.distance = 0.0;
+	location.valid = false;
     }
 
-    return target;
+    return location;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -233,12 +233,12 @@ void Target::Run()
 		    m_targetTop.angle = m_topAngle;
 		    //m_targetTop.distance = m_topDistance;
 		    m_targetTop.distance = m_centerDistance;
-		    m_targetTop.valid = true;
+		    m_targetTop.valid = (m_pTop != NULL);
 
 		    m_targetBottom.angle = m_bottomAngle;
 		    //m_targetBottom.distance = m_bottomDistance;
 		    m_targetBottom.distance = m_centerDistance;
-		    m_targetBottom.valid = true;
+		    m_targetBottom.valid = (m_pBottom != NULL);
 
 		    m_targetLeft.angle = m_leftAngle;
 		    m_targetLeft.distance = m_leftDistance;
@@ -337,13 +337,38 @@ bool Target::FindParticles()
 #endif
 
     // select interesting particles
+
     int particleCount = 0;
+#if 0
     if (!imaqParticleFilter4(m_filtered.GetImaqImage(), pImage->GetImaqImage(),
     		m_filterCriteria, 1, &m_filterOptions, NULL, &particleCount))
     {
 	printf("%s: imaqParticleFilter FAILED\n", __FUNCTION__);
 	return false;
     }
+#else
+    if (!imaqThreshold(m_filtered.GetImaqImage(), pImage->GetImaqImage(), 200, 255, 1, 255))
+    {
+	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
+	return false;
+    }
+    if (!imaqConvexHull(m_filtered.GetImaqImage(), m_filtered.GetImaqImage(), 1))
+    {
+	printf("%s: imaqConvexHull FAILED\n", __FUNCTION__);
+	return false;
+    }
+    if (!imaqSizeFilter(m_filtered.GetImaqImage(), m_filtered.GetImaqImage(),
+			1, 2, IMAQ_KEEP_LARGE, NULL))
+    {
+	printf("%s: imaqSizeFilter FAILED\n", __FUNCTION__);
+	return false;
+    }
+    if (!imaqCountParticles(m_filtered.GetImaqImage(), 1, &particleCount))
+    {
+	printf("%s: imaqCountParticles FAILED\n", __FUNCTION__);
+	return false;
+    }
+#endif
 
     // select the four largest particles (insertion sort)
     // for now, keep track of only the particle number (index) and size
@@ -387,6 +412,7 @@ bool Target::FindParticles()
 			    IMAQ_MT_BOUNDING_RECT_TOP, &(p->topBound)); 
 	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_BOUNDING_RECT_BOTTOM, &(p->bottomBound));
+	// calculate height/width from bounding box
 	p->height = p->bottomBound - p->topBound;
 	p->width = p->rightBound - p->leftBound;
     }
@@ -397,8 +423,8 @@ bool Target::FindParticles()
     printf("%s: returning %d particles\n", __FUNCTION__, m_numParticles);
     for (int i = 0; i < m_numParticles; i++) {
 	Particle *p = &m_particles[i];
-	printf("  particle %d top %g bottom %g left %g right %g size %g x %g y %g\n",
-		p->index, p->topBound, p->bottomBound, p->leftBound, p->rightBound,
+	printf("  particle %d index %d top %g bottom %g left %g right %g size %g x %g y %g\n",
+		i, p->index, p->topBound, p->bottomBound, p->leftBound, p->rightBound,
 		p->size, p->xCenter, p->yCenter);
     }
 
@@ -416,7 +442,10 @@ bool Target::AnalyzeParticles()
 
     // image quality tests:
     //
-    // 1) The particles should be laid out without overlapping.  For example, the left
+    // 1) The four particles should be approximately the same size.  If not, one or more
+    // of the particles is partially hidden or we didn't identify the particles correctly.
+    //
+    // 2) The particles should be laid out without overlapping.  For example, the left
     // and right bounds of the top particle should not overlap the right bound of the
     // left particle or the left bound of the right particle.  This relationship can
     // be used to determine which particle is missing when only 3 are in view.
@@ -425,11 +454,8 @@ bool Target::AnalyzeParticles()
     // e.g. absolute height information to sort this out when we're really close to
     // the targets.)
     //
-    // 2) There should be some space between the outer edge of each particle and the edge
+    // 3) There should be some space between the outer edge of each particle and the edge
     // of the image.  If not, one of the particles is partially outside the field of view.
-    //
-    // 3) The four particles should be approximately the same size.  If not, one or more
-    // of the particles is partially hidden or we didn't identify the particles correctly.
     //
     // 4) The aspect ratio (height to width ratio) of each (unclipped) particle should be
     // approximately that of the target rectangles.
@@ -437,6 +463,33 @@ bool Target::AnalyzeParticles()
     // 5) The image center position calculated from the inside edges of the particles,
     // the center of mass of the particles, and the outside edges of the particles should
     // be approximately the same.
+
+    double size; // median size
+    if (m_numParticles == 4) {
+	size = (m_particles[1].size + m_particles[2].size) / 2.;
+    } else {
+	// only 3 particles
+	size = m_particles[1].size;
+    }
+    // These limits are very large in order to accomodate
+    // clipping and image distortions from the hoops and nets at close range.
+    double min_size = size * 0.25;
+    double max_size = size * 1.50;
+
+    if (m_particles[0].size > max_size) {
+	printf("ERROR: particle 0 is unreasonably large, bad image\n");
+	return false;
+    }
+
+    if (m_numParticles == 4 && m_particles[3].size < min_size) {
+	printf("WARNING: particle 3 is unreasonably small, dropping it\n");
+	m_numParticles = 3;
+    }
+
+    if (m_numParticles == 3 && m_particles[2].size < min_size) {
+	printf("ERROR: particle 2 is unreasonably small\n");
+	return false;
+    }
 
     // Sort the particles by position, based on their inside edges.
     // These are in image coordinates, so (0,0) is top-left.
@@ -459,7 +512,7 @@ bool Target::AnalyzeParticles()
 	}
     }
 
-    printf("top %d bottom %d left %d right %d\n",
+    printf("sorted: top %d bottom %d left %d right %d\n",
 	m_pTop->index, m_pBottom->index, m_pLeft->index, m_pRight->index);
 
     if (m_numParticles < 4) {
@@ -469,22 +522,26 @@ bool Target::AnalyzeParticles()
 	if (m_pTop->bottomBound > m_pLeft->topBound ||
 	    m_pTop->bottomBound > m_pRight->topBound)
 	{
+	    printf("top overlaps left/right, top removed\n");
 	    m_pTop = NULL;
-	}
-	else if (m_pLeft->rightBound > m_pTop->leftBound ||
-	    m_pLeft->rightBound > m_pBottom->leftBound)
-	{
-	    m_pLeft = NULL;
-	}
-	else if (m_pRight->leftBound < m_pTop->rightBound ||
-	    m_pRight->leftBound < m_pBottom->rightBound)
-	{
-	    m_pRight = NULL;
 	}
 	else if (m_pBottom->topBound < m_pLeft->bottomBound ||
 	    m_pBottom->topBound < m_pRight->bottomBound)
 	{
+	    printf("bottom overlaps left/right, bottom removed\n");
 	    m_pBottom = NULL;
+	}
+	else if ((m_pTop && m_pLeft->rightBound > m_pTop->leftBound) ||
+	    (m_pBottom && m_pLeft->rightBound > m_pBottom->leftBound))
+	{
+	    printf("left overlaps top/bottom, left removed\n");
+	    m_pLeft = NULL;
+	}
+	else if ((m_pTop && m_pRight->leftBound < m_pTop->rightBound) ||
+	    (m_pBottom && m_pRight->leftBound < m_pBottom->rightBound))
+	{
+	    printf("right overlaps top/bottom, right removed\n");
+	    m_pRight = NULL;
 	}
 	else
 	{
@@ -503,107 +560,24 @@ bool Target::AnalyzeParticles()
     // check outside boundaries and particle sizes for clipping and image artifacts
     m_topClipped = m_bottomClipped = m_leftClipped = m_rightClipped = false;
 
-    float size; // median size
-    if (m_numParticles == 4) {
-	size = (m_particles[1].size + m_particles[2].size) / 2.;
-    } else {
-	// assume 3 particles
-	size = m_particles[1].size;
-    }
-    // These limits are very large in order to accomodate
-    // image distortions from the hoops and nets at close range.
-    float min_size = size * 0.50;  // 1/2 of median
-    float max_size = size * 2.00;  // 5/4 of median
-
-    if (m_pTop) {
-	if (m_pTop->topBound < BORDER) {
-	    printf("WARNING: top particle is clipped\n");
-	    m_topClipped = true;
-	}
-	else if (m_pTop->size < min_size) {
-	    // should this have been caught by the particle filter?
-	    printf("WARNING: top particle is unreasonably small\n");
-	    m_pTop = NULL;
-	    m_numParticles--;
-	    m_topClipped = true;
-	}
-	else if (m_pTop->size > max_size) {
-	    // should this have been caught by the particle filter?
-	    printf("WARNING: top particle is unreasonably large\n");
-	    m_pTop = NULL;
-	    m_numParticles--;
-	    m_topClipped = true;
-	}
-    } else {
+    if (!m_pTop || m_pTop->topBound < BORDER) {
+	printf("WARNING: top particle is clipped\n");
 	m_topClipped = true;
     }
 
-    if (m_pBottom) {
-	if (m_pBottom->bottomBound > (HEIGHT - BORDER)) {
-	    printf("WARNING: bottom particle is clipped\n");
-	    m_bottomClipped = true;
-	}
-	else if (m_pBottom->size < min_size) {
-	    printf("WARNING: bottom particle is unreasonably small\n");
-	    m_pBottom = NULL;
-	    m_numParticles--;
-	    m_bottomClipped = true;
-	}
-	else if (m_pBottom->size > max_size) {
-	    printf("WARNING: bottom particle is unreasonably large\n");
-	    m_pBottom = NULL;
-	    m_numParticles--;
-	    m_bottomClipped = true;
-	}
-    } else {
+    if (!m_pBottom || m_pBottom->bottomBound > (HEIGHT - BORDER)) {
+	printf("WARNING: bottom particle is clipped\n");
 	m_bottomClipped = true;
     }
 
-    if (m_pLeft) {
-	if (m_pLeft->leftBound < BORDER) {
-	    printf("WARNING: left particle is clipped\n");
-	    m_leftClipped = true;
-	}
-	else if (m_pLeft->size < min_size) {
-	    printf("WARNING: left particle is unreasonably small\n");
-	    m_pLeft = NULL;
-	    m_numParticles--;
-	    m_leftClipped = true;
-	}
-	else if (m_pLeft->size > max_size) {
-	    printf("WARNING: left particle is unreasonably large\n");
-	    m_pLeft = NULL;
-	    m_numParticles--;
-	    m_leftClipped = true;
-	}
-    } else {
+    if (!m_pLeft || m_pLeft->leftBound < BORDER) {
+	printf("WARNING: left particle is clipped\n");
 	m_leftClipped = true;
     }
 
-    if (m_pRight) {
-	if (m_pRight->rightBound > (WIDTH - BORDER)) {
-	    printf("WARNING: right particle is clipped\n");
-	    m_rightClipped = true;
-	}
-	else if (m_pRight->size < min_size) {
-	    printf("WARNING: right particle is unreasonably small\n");
-	    m_pRight = NULL;
-	    m_numParticles--;
-	    m_rightClipped = true;
-	}
-	else if (m_pRight->size > max_size) {
-	    printf("WARNING: right particle is unreasonably large\n");
-	    m_pRight = NULL;
-	    m_numParticles--;
-	    m_rightClipped = true;
-	}
-    } else {
+    if (!m_pRight || m_pRight->rightBound > (WIDTH - BORDER)) {
+	printf("WARNING: right particle is clipped\n");
 	m_rightClipped = true;
-    }
-
-    if (m_numParticles < 3) {
-	printf("ERROR: not enough particles remaining for analysis\n");
-	return false;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -689,9 +663,9 @@ bool Target::AnalyzeParticles()
 	return false;
     }
 
-    double leftAngle = atan( leftWidthImage / IMAGE_PLANE );
-    m_leftAngle = leftAngle * DEGREES;
-    printf("left angle %g degrees\n", m_leftAngle);
+    double theta1 = atan( leftWidthImage / IMAGE_PLANE );
+    m_leftAngle = m_centerAngle - theta1 * DEGREES;	// relative to robot
+    printf("theta1 %g, left angle %g degrees\n", theta1*DEGREES, m_leftAngle);
 
     double rightWidthReal;
     double rightWidthImage;
@@ -715,40 +689,44 @@ bool Target::AnalyzeParticles()
 	return false;
     }
 
-    double rightAngle = atan( rightWidthImage / IMAGE_PLANE );
-    m_rightAngle = rightAngle * DEGREES;
-    printf("right angle %g degrees\n", m_rightAngle);
+    double theta2 = atan( rightWidthImage / IMAGE_PLANE );
+    m_rightAngle = m_centerAngle + theta2 * DEGREES;	// relative to robot
+    printf("theta2 %g, right angle %g degrees\n", theta2*DEGREES, m_rightAngle);
 
     // these quantities appear repeatedly in the calculations
-    double known1 = sin(leftAngle) / leftWidthReal;
-    double known2 = sin(rightAngle) / rightWidthReal;
-    double known3 = M_PI - leftAngle - rightAngle;
-    double sin3 = sin(known3);
-    double cos3 = cos(known3);
+    double k1 = sin(theta1) / leftWidthReal;
+    double k2 = sin(theta2) / rightWidthReal;
+    double k3 = M_PI - (theta1 + theta2);
+    double sink3 = sin(k3);
+    double cosk3 = cos(k3);
+    printf("k1 %g k2 %g k3 %g sin k3 %g cos k3 %g\n",
+	k1, k2, k3*DEGREES, sink3, cosk3);
 
     // Calculate the distance to the center (c) using either
     // the triangle on the left or the right.
-    double alpha = atan((known1*sin3)/(known2+known1*cos3));
-    double c1 = sin(alpha) / known1;
+    double alpha = atan((k1*sink3)/(k2+k1*cosk3));
+    if (alpha < 0) { alpha += M_PI; }
+    printf("alpha %g degrees\n", alpha * DEGREES);
+    double c1 = sin(alpha) / k1;
 
-    double beta = atan((known2*sin3)/(known1+known2*cos3));
-    double c2 = sin(beta) / known2;
+    double beta = atan((k2*sink3)/(k1+k2*cosk3));
+    if (beta < 0) { beta += M_PI; }
+    printf("beta %g degrees\n", beta * DEGREES);
+    double c2 = sin(beta) / k2;
 
-    // Check: these two distance calculations should agree to within
-    // the floating-point calculation precision.
-    if (fabs(c2-c1) > (c1+c2)*0.0001) {
-	printf("ERROR: calculated distances do not agree (can't happen)\n");
-	printf("distance1 %g, distance2 %g\n", c1, c2);
-	return false;
-    }
+    // Check: the sum of alpha+beta should be equal to k3.
+    printf("alpha+beta %g k3 %g\n", (alpha+beta)*DEGREES, k3*DEGREES);
+
+    // Check: these two distance calculations should agree.
+    printf("distance1 %g, distance2 %g\n", c1, c2);
 
     m_centerDistance = c1;
 
     // angle "gamma1" and side "b" in Jeff's diagram
-    m_leftDistance = sin(M_PI - leftAngle - alpha) / known1;
+    m_leftDistance = sin(M_PI - (theta1 + alpha)) / k1;
 
     // angle "gamma2" and side "a" in Jeff's diagram
-    m_rightDistance = sin(M_PI - leftAngle - beta) / known1;
+    m_rightDistance = sin(M_PI - (theta2 + beta)) / k2;
 
     printf("distance left %g, center %g, right %g\n",
 	    m_leftDistance, m_centerDistance, m_rightDistance);
