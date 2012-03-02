@@ -25,8 +25,6 @@ void MyRobot::TeleopInit()
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Teleop Mode");
     lcd->UpdateLCD();
-
-    target.GetImage();
 }
 
 void MyRobot::TeleopPeriodic()
@@ -100,12 +98,18 @@ void MyRobot::TeleopPeriodic()
 
     illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
 
+#if 0
     if (dsd2) {
-	if (target.GetImage()) {
-	    target.FindParticles();
-	    target.SaveImages();
+	TargetLocation location = target.GetTarget( which target? );
+	if (location.valid) {
+	    // are we on target?
+	    // do we need to turn?
+	    // how much to turn?
+	    // how do we control the drive platform?
 	}
+
     }
+#endif
 
     if (balance.IsBalanced()) {
 	drive.Drive(0.0F, 0.0F);

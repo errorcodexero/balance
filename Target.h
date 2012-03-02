@@ -13,20 +13,53 @@ public:
     Target();
     ~Target();
 
-    bool GetImage();
-    int FindParticles();
-    bool AnalyzeParticles();
+    typedef enum { kCenter, kLeft, kRight } TargetID;
 
-    void SaveImages();		// for debugging
+    struct TargetLocation {
+	TargetID id;		// which target
+	double angle;		// in degrees, positive is to the right
+	double distance;	// in inches
+	bool valid;		// is the position data valid for targeting?
+    };
+
+    TargetLocation GetTarget( TargetID which );
 
 private:
-    // images
-    RGBImage cameraImage;
-    MonoImage monoImage;
-    MonoImage equalized;
-    MonoImage filtered;
+    // Target calculations take a long time,
+    // so we run them in a background task.
+    Task m_task;
 
-    // particles
+    static void TargetProcess( Target *t );
+    void Run();
+
+    ////////////////////////////////////////////////////
+    // Target locations returned to the main thread.
+    // Accesses must be locked with the mutex.
+    ////////////////////////////////////////////////////
+
+    SEM_ID m_sem;
+    TargetLocation m_targetLeft, m_targetRight, m_targetCenter;
+
+    ///////////////////////////////////////////////////
+    // The following variables are used by the
+    // processing task and should not be accessed
+    // from the main thread.
+    ///////////////////////////////////////////////////
+
+    // processing constants
+    ParticleFilterCriteria2 m_filterCriteria[1];
+    ParticleFilterOptions2 m_filterOptions;
+    RGBValue m_falseColor[256];
+
+    // images
+    RGBImage m_cameraImage;
+    MonoImage m_monoImage;
+#if 0
+    MonoImage m_equalized;
+#endif
+    MonoImage m_filtered;
+
+    // particles (regions of interest)
     struct Particle {
 	int index;
 	double size;
@@ -38,16 +71,28 @@ private:
 	double bottomBound;
 	double height;
 	double width;
-    } particles[4];
+    } m_particles[4];
 
-    Particle *pTop, *pBottom, *pLeft, *pRight;
+    int m_numParticles;
+    Particle *m_pTop, *m_pBottom, *m_pLeft, *m_pRight;
+    bool m_topClipped, m_bottomClipped, m_leftClipped, m_rightClipped;
 
-    int num_particles;
+    // target locations
+    double m_centerAngle;
+    double m_centerDistance;
+    double m_leftAngle;
+    double m_leftDistance;
+    double m_rightAngle;
+    double m_rightDistance;
+ 
+    // initialization
+    void TargetInit();
 
-    // processing constants
-    ParticleFilterCriteria2 filterCriteria[1];
-    ParticleFilterOptions2 filterOptions;
-    RGBValue falseColor[256];
+    // targeting calculations
+    bool GetImage();
+    bool FindParticles();
+    bool AnalyzeParticles();
+    void SaveImages();
 };
 
 #endif // _TARGET_H_

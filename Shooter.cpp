@@ -19,9 +19,10 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	PID_P		0.010F	// initial PID constants, can be tuned in preferences
 #define	PID_I		0.001F
 #define	PID_D		0.000F
-// stupid WPILib timers are only 1s resolution
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
-#define	TOLERANCE	3.0F	// speed tolerance
+#define	ADJUST		6.0F	// speed adjustment range (%)
+#define	TOLERANCE	3.0F	// speed tolerance (%)
+// stupid WPILib timers are only 1s resolution
 #define SHOT_TIME	1.0F	// time to cycle injector up or down
 
 Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
@@ -146,6 +147,34 @@ void Shooter::SetSpeed( float speed )
     speed_top = speed_bottom * drive_ratio;
     pid_top.SetSetpoint( speed_top );
     // Log();
+}
+
+void Shooter::SetTarget( int target, float distance, float adjust )
+{
+    const float ballistic_low[3] = { -415.0, 136.3, -4.000 };	// wild guess
+    const float ballistic_mid[3] = { -75.00, 98.33, -2.777 };
+    const float ballistic_high[3] = { 265.0, 60.33, -1.556 };
+
+    const float *coeff;
+
+    switch (target) {
+    case 0:
+	coeff = ballistic_low;
+	break;
+    case 1:
+	coeff = ballistic_mid;
+	break;
+    case 2:
+	coeff = ballistic_high;
+	break;
+    default:
+	// invalid
+	return;
+    }
+
+    float speed = ((coeff[2] * distance) + coeff[1]) * distance + coeff[0];
+    speed *= 1.0 + adjust * ADJUST / 100.0F;
+    SetSpeed(speed);
 }
 
 void Shooter::Start()
