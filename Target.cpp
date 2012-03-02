@@ -61,6 +61,16 @@ void Target::TargetInit()
     m_targetCenter.distance = 0.0;
     m_targetCenter.valid = false;
 
+    m_targetTop.id = kTop;
+    m_targetTop.angle = 0.0;
+    m_targetTop.distance = 0.0;
+    m_targetTop.valid = false;
+
+    m_targetBottom.id = kBottom;
+    m_targetBottom.angle = 0.0;
+    m_targetBottom.distance = 0.0;
+    m_targetBottom.valid = false;
+
     m_targetLeft.id = kLeft;
     m_targetLeft.angle = 0.0;
     m_targetLeft.distance = 0.0;
@@ -84,6 +94,18 @@ Target::TargetLocation Target::GetTarget( TargetID which )
 	{
 	    Synchronized mutex(m_sem);
 	    target = m_targetCenter;
+	}
+	break;
+    case kTop:
+	{
+	    Synchronized mutex(m_sem);
+	    target = m_targetTop;
+	}
+	break;
+    case kBottom:
+	{
+	    Synchronized mutex(m_sem);
+	    target = m_targetBottom;
 	}
 	break;
     case kLeft:
@@ -208,6 +230,16 @@ void Target::Run()
 		    m_targetCenter.distance = m_centerDistance;
 		    m_targetCenter.valid = true;
 
+		    m_targetTop.angle = m_topAngle;
+		    //m_targetTop.distance = m_topDistance;
+		    m_targetTop.distance = m_centerDistance;
+		    m_targetTop.valid = true;
+
+		    m_targetBottom.angle = m_bottomAngle;
+		    //m_targetBottom.distance = m_bottomDistance;
+		    m_targetBottom.distance = m_centerDistance;
+		    m_targetBottom.valid = true;
+
 		    m_targetLeft.angle = m_leftAngle;
 		    m_targetLeft.distance = m_leftDistance;
 		    m_targetLeft.valid = !m_leftClipped;
@@ -221,6 +253,8 @@ void Target::Run()
 		    Synchronized mutex(m_sem);
 
 		    m_targetCenter.valid = false;
+		    m_targetTop.valid = false;
+		    m_targetBottom.valid = false;
 		    m_targetLeft.valid = false;
 		    m_targetRight.valid = false;
 		}
@@ -341,17 +375,17 @@ bool Target::FindParticles()
 	 m_numParticles++)
     {
 	Particle* p = &m_particles[m_numParticles];
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_CENTER_OF_MASS_X, &(p->xCenter));
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_CENTER_OF_MASS_Y, &(p->yCenter));
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_BOUNDING_RECT_LEFT, &(p->leftBound));
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_BOUNDING_RECT_RIGHT, &(p->rightBound));
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_BOUNDING_RECT_TOP, &(p->topBound)); 
-	imaqMeasureParticle(m_filtered.GetImaqImage(), m_numParticles, FALSE,
+	imaqMeasureParticle(m_filtered.GetImaqImage(), p->index, FALSE,
 			    IMAQ_MT_BOUNDING_RECT_BOTTOM, &(p->bottomBound));
 	p->height = p->bottomBound - p->topBound;
 	p->width = p->rightBound - p->leftBound;
@@ -363,8 +397,9 @@ bool Target::FindParticles()
     printf("%s: returning %d particles\n", __FUNCTION__, m_numParticles);
     for (int i = 0; i < m_numParticles; i++) {
 	Particle *p = &m_particles[i];
-	printf("  particle %d size %g x %g y %g\n",
-		p->index, p->size, p->xCenter, p->yCenter);
+	printf("  particle %d top %g bottom %g left %g right %g size %g x %g y %g\n",
+		p->index, p->topBound, p->bottomBound, p->leftBound, p->rightBound,
+		p->size, p->xCenter, p->yCenter);
     }
 
     return true;
@@ -406,7 +441,7 @@ bool Target::AnalyzeParticles()
     // Sort the particles by position, based on their inside edges.
     // These are in image coordinates, so (0,0) is top-left.
 
-    m_pTop = m_pBottom = m_pLeft = m_pRight = NULL;
+    m_pTop = m_pBottom = m_pLeft = m_pRight = &m_particles[0];
 
     for (int i = 1; i < m_numParticles; i++) {
 	Particle *p = &m_particles[i];
@@ -609,20 +644,18 @@ bool Target::AnalyzeParticles()
     //////////////////////////////////////////////////////////////////////////
 
     if (m_pTop) {
-	double topTan = (m_pTop->xCenter - (WIDTH/2)) / IMAGE_PLANE;
-	double topAngle = atan(topTan) * DEGREES;
-	printf("top angle %g degrees\n", topAngle);
+	m_topAngle = atan((m_pTop->xCenter-(WIDTH/2))/IMAGE_PLANE)*DEGREES;
+	printf("top angle %g degrees\n", m_topAngle);
     }
 
     if (m_pBottom) {
-	double bottomTan = (m_pBottom->xCenter - (WIDTH/2)) / IMAGE_PLANE;
-	double bottomAngle = atan(bottomTan) * DEGREES;
-	printf("bottom angle %g degrees\n", bottomAngle);
+	m_bottomAngle = atan((m_pBottom->xCenter-(WIDTH/2))/IMAGE_PLANE)*DEGREES;
+	printf("bottom angle %g degrees\n", m_bottomAngle);
     }
 
     double centerX;
     if (m_pTop && m_pBottom) {
-	centerX = (m_pTop->xCenter + m_pBottom->yCenter) / 2.;
+	centerX = (m_pTop->xCenter + m_pBottom->xCenter) / 2.;
     } else if (m_pTop) {
 	centerX = m_pTop->xCenter;
     } else if (m_pBottom) {

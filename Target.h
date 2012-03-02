@@ -13,7 +13,7 @@ public:
     Target();
     ~Target();
 
-    typedef enum { kCenter, kLeft, kRight } TargetID;
+    typedef enum { kCenter, kTop, kBottom, kLeft, kRight } TargetID;
 
     struct TargetLocation {
 	TargetID id;		// which target
@@ -38,7 +38,11 @@ private:
     ////////////////////////////////////////////////////
 
     SEM_ID m_sem;
-    TargetLocation m_targetLeft, m_targetRight, m_targetCenter;
+    TargetLocation m_targetCenter;
+    TargetLocation m_targetTop;
+    TargetLocation m_targetBottom;
+    TargetLocation m_targetLeft;
+    TargetLocation m_targetRight;
 
     ///////////////////////////////////////////////////
     // The following variables are used by the
@@ -78,6 +82,8 @@ private:
     bool m_topClipped, m_bottomClipped, m_leftClipped, m_rightClipped;
 
     // target locations
+    double m_topAngle;
+    double m_bottomAngle;
     double m_centerAngle;
     double m_centerDistance;
     double m_leftAngle;
