@@ -12,7 +12,7 @@ class Target
 public:
     Target();
     ~Target();
-
+ 
     typedef enum { kCenter, kTop, kBottom, kLeft, kRight } TargetID;
 
     struct TargetLocation {
@@ -28,6 +28,19 @@ public:
     bool TargetsFound();
 
     TargetLocation GetTargetLocation( TargetID which );
+
+    struct Particle {
+	int index;
+	double size;
+	double xCenter;
+	double yCenter;
+	double leftBound;
+	double rightBound;
+	double topBound;
+	double bottomBound;
+	double height;
+	double width;
+    };
 
 private:
     // Target calculations take a long time,
@@ -59,37 +72,26 @@ private:
     ///////////////////////////////////////////////////
 
     // processing constants
-    ParticleFilterCriteria2 m_filterCriteria[1];
-    ParticleFilterOptions2 m_filterOptions;
     RGBValue m_falseColor[256];
 
     // images
     RGBImage m_cameraImage;
     MonoImage m_monoImage;
-#if 0
-    MonoImage m_equalized;
-#endif
+    MonoImage m_threshold;
+    MonoImage m_convexHull;
     MonoImage m_filtered;
+    RGBImage m_overlay;  // for debugging
 
     // particles (regions of interest)
-    struct Particle {
-	int index;
-	double size;
-	double xCenter;
-	double yCenter;
-	double leftBound;
-	double rightBound;
-	double topBound;
-	double bottomBound;
-	double height;
-	double width;
-    } m_particles[4];
+    Particle m_particles[4];
 
     int m_numParticles;
     Particle *m_pTop, *m_pBottom, *m_pLeft, *m_pRight;
     bool m_topClipped, m_bottomClipped, m_leftClipped, m_rightClipped;
 
     // target locations
+    double m_centerX;
+    double m_centerY;
     double m_topAngle;
     double m_bottomAngle;
     double m_centerAngle;

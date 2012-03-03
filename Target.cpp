@@ -23,38 +23,27 @@ void Target::TargetInit()
 {
     memset(m_falseColor, 0, sizeof(m_falseColor));
     for (int i = 1; i < 255; i++) {
-	switch (i % 6) {
+	switch ((i-1) % 6) {
 	case 0:	// white
 	    m_falseColor[i].R = m_falseColor[i].G = m_falseColor[i].B = 255;
 	    break;
-	case 1: // magenta
-	    m_falseColor[i].B = m_falseColor[i].R = 255;
-	    break;
-	case 2: // red
+	case 1: // red
 	    m_falseColor[i].R = 255;
 	    break;
-	case 3: // yellow
+	case 2: // yellow
 	    m_falseColor[i].R = m_falseColor[i].G = 255;
 	    break;
-	case 4: // green
+	case 3: // green
 	    m_falseColor[i].G = 255;
+	    break;
+	case 4: // magenta
+	    m_falseColor[i].B = m_falseColor[i].R = 255;
 	    break;
 	case 5: // cyan
 	    m_falseColor[i].G = m_falseColor[i].B = 255;
 	    break;
 	}
     }
-
-    m_filterCriteria[0].parameter  = IMAQ_MT_PARTICLE_AND_HOLES_AREA;
-    m_filterCriteria[0].lower      = 640*480 / 100;
-    m_filterCriteria[0].upper      = 640*480 / 3;
-    m_filterCriteria[0].calibrated = FALSE;
-    m_filterCriteria[0].exclude    = FALSE;
-
-    m_filterOptions.rejectMatches = FALSE;
-    m_filterOptions.rejectBorder  = FALSE;
-    m_filterOptions.fillHoles     = TRUE;
-    m_filterOptions.connectivity8 = TRUE;
 
     m_newImage = false;
     m_processingComplete = false;
@@ -67,25 +56,25 @@ void Target::TargetInit()
     m_targetCenter.valid = false;
 
     m_targetTop.id = kTop;
-    m_targetCenter.height = 2;
+    m_targetTop.height = 2;
     m_targetTop.angle = 0.0;
     m_targetTop.distance = 0.0;
     m_targetTop.valid = false;
 
     m_targetBottom.id = kBottom;
-    m_targetCenter.height = 9;
+    m_targetBottom.height = 9;
     m_targetBottom.angle = 0.0;
     m_targetBottom.distance = 0.0;
     m_targetBottom.valid = false;
 
     m_targetLeft.id = kLeft;
-    m_targetCenter.height = 1;
+    m_targetLeft.height = 1;
     m_targetLeft.angle = 0.0;
     m_targetLeft.distance = 0.0;
     m_targetLeft.valid = false;
 
     m_targetRight.id = kRight;
-    m_targetCenter.height = 1;
+    m_targetRight.height = 1;
     m_targetRight.angle = 0.0;
     m_targetRight.distance = 0.0;
     m_targetRight.valid = false;
@@ -252,6 +241,7 @@ void Target::Run()
 {
     while (1) {
 	if (m_newImage && GetImage()) {
+	    m_pTop = m_pBottom = m_pLeft = m_pRight = NULL;
 	    bool result = FindParticles() && AnalyzeParticles();
 	    {
 		Synchronized mutex(m_sem);
@@ -318,37 +308,99 @@ bool Target::GetImage()
     return true;
 }
 
+static void OverlayParticle( RGBImage *image, Target::Particle *p )
+{
+    if (p) {
+	Point points[4];
+
+	points[0].x = (int)(p->leftBound + 0.5);
+	points[0].y = (int)(p->topBound + 0.5);
+	points[1].x = (int)(p->leftBound + 0.5);
+	points[1].y = (int)(p->bottomBound + 0.5);
+	points[2].x = (int)(p->rightBound + 0.5);
+	points[2].y = (int)(p->bottomBound + 0.5);
+	points[3].x = (int)(p->rightBound + 0.5);
+	points[3].y = (int)(p->topBound + 0.5);
+	imaqOverlayClosedContour(image->GetImaqImage(), points, 4, &IMAQ_RGB_RED, IMAQ_DRAW_VALUE, NULL);
+
+	points[0].x = (int)(p->xCenter + 0.5) - 10;
+	points[0].y = (int)(p->yCenter + 0.5) - 10;
+	points[1].x = (int)(p->xCenter + 0.5) + 10;
+	points[1].y = (int)(p->yCenter + 0.5) + 10;
+	points[2].x = (int)(p->xCenter + 0.5) - 10;
+	points[2].y = (int)(p->yCenter + 0.5) + 10;
+	points[3].x = (int)(p->xCenter + 0.5) + 10;
+	points[3].y = (int)(p->yCenter + 0.5) - 10;
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_GREEN, NULL);
+	imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_GREEN, NULL);
+    }
+}
+
+static void OverlayCenter( RGBImage *image, double x, double y )
+{
+    Point points[4];
+
+    points[0].x = (int)(x + 0.5) - 10;
+    points[0].y = (int)(y + 0.5) - 10;
+    points[1].x = (int)(x + 0.5) + 10;
+    points[1].y = (int)(y + 0.5) + 10;
+    points[2].x = (int)(x + 0.5) - 10;
+    points[2].y = (int)(y + 0.5) + 10;
+    points[3].x = (int)(x + 0.5) + 10;
+    points[3].y = (int)(y + 0.5) - 10;
+
+    imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_GREEN, NULL);
+    imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_GREEN, NULL);
+}
+
 void Target::SaveImages()
 {
-    long then = (long) GetFPGATime();
+    // long then = (long) GetFPGATime();
 
-    if (!imaqWriteFile(m_cameraImage.GetImaqImage(), "/tmp/vision00-camera.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision00-camera.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_cameraImage.GetImaqImage(), "/tmp/vision0-camera.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision0-camera.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-    if (!imaqWriteFile(m_monoImage.GetImaqImage(), "/tmp/vision01-monoImage.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision01-monoImage.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_monoImage.GetImaqImage(), "/tmp/vision1-monoImage.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision1-monoImage.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-#if 0
-    if (!imaqWriteFile(m_equalized.GetImaqImage(), "/tmp/vision02-equalized.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision02-equalized.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_threshold.GetImaqImage(), "/tmp/vision2-threshold.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision2-threshold.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-#endif
-    if (!imaqWriteFile(m_filtered.GetImaqImage(), "/tmp/vision03-filtered.bmp", m_falseColor)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision03-filtered.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_convexHull.GetImaqImage(), "/tmp/vision3-convexHull.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision3-convexHull.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+    if (!imaqWriteFile(m_filtered.GetImaqImage(), "/tmp/vision4-filtered.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision4-filtered.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
 
-    long now = (long) GetFPGATime();
-    printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
+    imaqMergeOverlay(m_overlay.GetImaqImage(), m_filtered.GetImaqImage(), m_falseColor, 256, NULL);
+
+    OverlayParticle(&m_overlay, m_pTop);
+    OverlayParticle(&m_overlay, m_pBottom);
+    OverlayParticle(&m_overlay, m_pLeft);
+    OverlayParticle(&m_overlay, m_pRight);
+
+    OverlayCenter(&m_overlay, m_centerX, m_centerY);
+
+    imaqMergeOverlay(m_overlay.GetImaqImage(), m_overlay.GetImaqImage(), NULL, 0, NULL);
+
+    if (!imaqWriteFile(m_overlay.GetImaqImage(), "/tmp/vision5-overlay.bmp", FALSE)) {
+	printf("%s: imaqWriteFile(\"/tmp/vision5-overlay.bmp\") FAILED\n", __FUNCTION__);
+	// ignore the error
+    }
+
+    // long now = (long) GetFPGATime();
+    // printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
 }
 
 bool Target::FindParticles()
 {
     long then = (long) GetFPGATime();
-    MonoImage *pImage = NULL;
 
     // extract the blue plane
     if (!imaqExtractColorPlanes(m_cameraImage.GetImaqImage(), IMAQ_RGB,
@@ -357,52 +409,51 @@ bool Target::FindParticles()
 	printf("%s: imaqExtractColorPlanes FAILED\n", __FUNCTION__);
 	return false;
     }
-    pImage = &m_monoImage;
-
-#if 0
-    // apply auto-median to simplify particles
-    if (!imaqGrayMorphology(m_equalized.GetImaqImage(), m_monoImage.GetImaqImage(),
-    		IMAQ_AUTOM, NULL))
-    {
-	printf("%s: imaqGrayMorphology FAILED\n", __FUNCTION__);
-	return false;
-    }
-    pImage = &m_equalized;
-#endif
 
     // select interesting particles
-
-    int particleCount = 0;
-#if 0
-    if (!imaqParticleFilter4(m_filtered.GetImaqImage(), pImage->GetImaqImage(),
-    		m_filterCriteria, 1, &m_filterOptions, NULL, &particleCount))
-    {
-	printf("%s: imaqParticleFilter FAILED\n", __FUNCTION__);
-	return false;
-    }
-#else
-    if (!imaqThreshold(m_filtered.GetImaqImage(), pImage->GetImaqImage(), 200, 255, 1, 255))
+#if 1
+    if (!imaqThreshold(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
+    	/*rangeMin*/ 180, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
     {
 	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
 	return false;
     }
-    if (!imaqConvexHull(m_filtered.GetImaqImage(), m_filtered.GetImaqImage(), 1))
+#else
+    ThresholdData *pThD;
+    if (!(pThD = imaqAutoThreshold2(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
+    			2, IMAQ_THRESH_INTERCLASS, NULL)))
+    {
+	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
+	return false;
+    }
+    for (int i = 0; i < 2; i++) {
+	printf("range min %g max %g useNewValue %d newValue %g\n",
+	    pThD[i].rangeMin, pThD[i].rangeMax, pThD[i].useNewValue, pThD[i].newValue);
+    }
+    imaqDispose(pThD);
+#endif
+
+    if (!imaqConvexHull(m_convexHull.GetImaqImage(), m_threshold.GetImaqImage(),
+    	/*connectivity8*/ 1))
     {
 	printf("%s: imaqConvexHull FAILED\n", __FUNCTION__);
 	return false;
     }
-    if (!imaqSizeFilter(m_filtered.GetImaqImage(), m_filtered.GetImaqImage(),
-			1, 2, IMAQ_KEEP_LARGE, NULL))
+
+    if (!imaqSizeFilter(m_filtered.GetImaqImage(), m_convexHull.GetImaqImage(),
+	/*connectivity8*/ 1, /*erosions*/ 2, /*keepSize*/ IMAQ_KEEP_LARGE,
+	/*structuringElement*/ NULL))
     {
 	printf("%s: imaqSizeFilter FAILED\n", __FUNCTION__);
 	return false;
     }
+
+    int particleCount = 0;
     if (!imaqCountParticles(m_filtered.GetImaqImage(), 1, &particleCount))
     {
 	printf("%s: imaqCountParticles FAILED\n", __FUNCTION__);
 	return false;
     }
-#endif
 
     // select the four largest particles (insertion sort)
     // for now, keep track of only the particle number (index) and size
@@ -661,21 +712,31 @@ bool Target::AnalyzeParticles()
 	printf("bottom angle %g degrees\n", m_bottomAngle);
     }
 
-    double centerX;
     if (m_pTop && m_pBottom) {
-	centerX = (m_pTop->xCenter + m_pBottom->xCenter) / 2.;
-	m_centerAngle = atan((centerX - (WIDTH/2)) / IMAGE_PLANE) * DEGREES;
+	m_centerX = (m_pTop->xCenter + m_pBottom->xCenter) / 2.;
+	m_centerAngle = atan((m_centerX - (WIDTH/2)) / IMAGE_PLANE) * DEGREES;
 	printf("center angle %g degrees\n", m_centerAngle);
     } else if (m_pTop) {
-	centerX = m_pTop->xCenter;
+	m_centerX = m_pTop->xCenter;
 	m_centerAngle = m_topAngle;
 	m_bottomAngle = m_topAngle;  // best available estimate
     } else if (m_pBottom) {
-	centerX = m_pBottom->xCenter;
+	m_centerX = m_pBottom->xCenter;
 	m_centerAngle = m_bottomAngle;
 	m_topAngle = m_bottomAngle;  // best available estimate
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
+	return false;
+    }
+
+    if (m_pLeft && m_pRight) {
+	m_centerY = (m_pLeft->yCenter + m_pRight->yCenter) / 2.;
+    } else if (m_pLeft) {
+	m_centerY = m_pLeft->yCenter;
+    } else if (m_pRight) {
+	m_centerY = m_pRight->yCenter;
+    } else {
+	printf("ERROR: m_pLeft and m_pRight are both NULL (can't happen!)\n");
 	return false;
     }
 
@@ -684,17 +745,17 @@ bool Target::AnalyzeParticles()
     if (m_pLeft) {
 	if (m_leftClipped) {
 	    leftWidthReal = FRC_INSIDE;
-	    leftWidthImage = centerX - m_pLeft->rightBound;
+	    leftWidthImage = m_centerX - m_pLeft->rightBound;
 	} else {
 	    leftWidthReal = FRC_OUTSIDE;
-	    leftWidthImage = centerX - m_pLeft->leftBound;
+	    leftWidthImage = m_centerX - m_pLeft->leftBound;
 	}
     } else if (m_pTop) {
 	leftWidthReal = FRC_WIDTH;
-	leftWidthImage = centerX - m_pTop->leftBound;
+	leftWidthImage = m_centerX - m_pTop->leftBound;
     } else if (m_pBottom) {
 	leftWidthReal = FRC_WIDTH;
-	leftWidthImage = centerX - m_pBottom->leftBound;
+	leftWidthImage = m_centerX - m_pBottom->leftBound;
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
 	return false;
@@ -710,17 +771,17 @@ bool Target::AnalyzeParticles()
     if (m_pRight) {
 	if (m_rightClipped) {
 	    rightWidthReal = FRC_INSIDE;
-	    rightWidthImage = m_pRight->leftBound - centerX;
+	    rightWidthImage = m_pRight->leftBound - m_centerX;
 	} else {
 	    rightWidthReal = FRC_OUTSIDE;
-	    rightWidthImage = m_pRight->rightBound - centerX;
+	    rightWidthImage = m_pRight->rightBound - m_centerX;
 	}
     } else if (m_pTop) {
 	rightWidthReal = FRC_WIDTH;
-	rightWidthImage = m_pTop->rightBound - centerX;
+	rightWidthImage = m_pTop->rightBound - m_centerX;
     } else if (m_pBottom) {
 	rightWidthReal = FRC_WIDTH;
-	rightWidthImage = m_pBottom->rightBound - centerX;
+	rightWidthImage = m_pBottom->rightBound - m_centerX;
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
 	return false;
