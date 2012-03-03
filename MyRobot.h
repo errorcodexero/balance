@@ -25,6 +25,7 @@ public:
     void EnableVoltageControl();
     void EnableSpeedControl();
     void EnablePositionControl();
+    bool TurnToPosition( float angle, float tolerance );
 
     void DisabledInit();
     void AutonomousInit();
@@ -98,6 +99,8 @@ private:
 
     // Targeting
     Target target;
+    Target::TargetLocation targetLocation;
+    enum { kManual, kLooking, kTurning, kShooting, kNoTarget } fireControl;
 
     ///////////////////////////////////////////////////////////////////
     // helper functions

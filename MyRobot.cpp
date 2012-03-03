@@ -2,6 +2,7 @@
 // Steve Tarr - team 1425 mentor - 11-Feb-2012
 
 #include <WPILib.h>
+#include <math.h>
 #include "MyRobot.h"
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
@@ -27,7 +28,8 @@ MyRobot::MyRobot() :
     balance( drive, pitch ),
     pickup( ball_pickup ),
     shooter( 1, 2, 3, 4, 2 ),
-    target()
+    target(),
+    fireControl(kManual)
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
 
@@ -63,6 +65,7 @@ void MyRobot::Safe()
     pickup.Stop();
     shooter.Stop();
     cowcatcher.Set( false );
+    fireControl = kManual;
 }
 
 void MyRobot::DisableMotor( CANJaguar& motor )
@@ -146,9 +149,34 @@ void MyRobot::EnablePositionControl()
     EnablePositionControl( motor_left_2 );
     EnablePositionControl( motor_right_2 );
 
-    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
-    drive.SetMaxOutput( 100 );			 // 100 revolutions?
-    drive.SetSafetyEnabled( true );
+    drive.SetSafetyEnabled( false );  // bypass the RobotDrive class for this
+}
+
+bool MyRobot::TurnToPosition( float angle, float tolerance )
+{
+    // TBD: Tune scaling factor to match drive gear ration,
+    //      wheel size and wheelbase.
+    const float scale = 3.0 / 360.;
+    float pos = angle * scale;
+    float threshold = tolerance * scale;
+
+    if (fabs(motor_left_1.GetPosition() - pos) < threshold &&
+	fabs(motor_left_1.GetPosition() - pos) < threshold &&
+	fabs(motor_left_1.GetPosition() + pos) < threshold &&
+	fabs(motor_left_1.GetPosition() + pos) < threshold)
+    {
+	DisableMotors();
+	return true;
+    }
+    else
+    {
+	motor_left_1.Set(pos, 1);
+	motor_left_2.Set(pos, 1);
+	motor_right_1.Set(-pos, 1);
+	motor_right_2.Set(-pos, 1);
+	CANJaguar::UpdateSyncGroup(1);
+	return false;
+    }
 }
 
 START_ROBOT_CLASS(MyRobot);

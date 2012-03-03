@@ -17,12 +17,17 @@ public:
 
     struct TargetLocation {
 	TargetID id;		// which target
+	int height;		// 0 = bottom, 1 = middle, 2 = top
 	double angle;		// in degrees, positive is to the right
 	double distance;	// in inches
 	bool valid;		// is the position data valid for targeting?
     };
 
-    TargetLocation GetTarget( TargetID which );
+    void StartAcquisition();
+    bool ProcessingComplete();
+    bool TargetsFound();
+
+    TargetLocation GetTargetLocation( TargetID which );
 
 private:
     // Target calculations take a long time,
@@ -38,6 +43,9 @@ private:
     ////////////////////////////////////////////////////
 
     SEM_ID m_sem;
+    bool m_newImage;
+    bool m_processingComplete;
+    bool m_targetsFound;
     TargetLocation m_targetCenter;
     TargetLocation m_targetTop;
     TargetLocation m_targetBottom;

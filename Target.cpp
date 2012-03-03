@@ -56,27 +56,36 @@ void Target::TargetInit()
     m_filterOptions.fillHoles     = TRUE;
     m_filterOptions.connectivity8 = TRUE;
 
+    m_newImage = false;
+    m_processingComplete = false;
+    m_targetsFound = false;
+
     m_targetCenter.id = kCenter;
+    m_targetCenter.height = 1;
     m_targetCenter.angle = 0.0;
     m_targetCenter.distance = 0.0;
     m_targetCenter.valid = false;
 
     m_targetTop.id = kTop;
+    m_targetCenter.height = 2;
     m_targetTop.angle = 0.0;
     m_targetTop.distance = 0.0;
     m_targetTop.valid = false;
 
     m_targetBottom.id = kBottom;
+    m_targetCenter.height = 9;
     m_targetBottom.angle = 0.0;
     m_targetBottom.distance = 0.0;
     m_targetBottom.valid = false;
 
     m_targetLeft.id = kLeft;
+    m_targetCenter.height = 1;
     m_targetLeft.angle = 0.0;
     m_targetLeft.distance = 0.0;
     m_targetLeft.valid = false;
 
     m_targetRight.id = kRight;
+    m_targetCenter.height = 1;
     m_targetRight.angle = 0.0;
     m_targetRight.distance = 0.0;
     m_targetRight.valid = false;
@@ -86,45 +95,67 @@ Target::~Target()
 {
 }
 
-Target::TargetLocation Target::GetTarget( TargetID which )
+void Target::StartAcquisition()
+{
+    {
+	Synchronized mutex(m_sem);
+	m_newImage = true;
+	m_processingComplete = false;
+	m_targetsFound = false;
+    }
+}
+
+bool Target::ProcessingComplete()
+{
+    bool result;
+    {
+	Synchronized mutex(m_sem);
+	result = m_processingComplete;
+    }
+    return result;
+}
+
+bool Target::TargetsFound()
+{
+    bool result;
+    {
+	Synchronized mutex(m_sem);
+	result = m_targetsFound;
+    }
+    return result;
+}
+
+Target::TargetLocation Target::GetTargetLocation( TargetID which )
 {
     TargetLocation location;
-    switch (which) {
-    case kCenter:
-	{
-	    Synchronized mutex(m_sem);
-	    location = m_targetCenter;
+
+    location.id = which;
+    location.angle = 0.0;
+    location.distance = 0.0;
+    location.valid = false;
+
+    {
+	Synchronized mutex(m_sem);
+
+	if (m_processingComplete && m_targetsFound) {
+	    switch (which) {
+	    case kCenter:
+		location = m_targetCenter;
+		break;
+	    case kTop:
+		location = m_targetTop;
+		break;
+	    case kBottom:
+		location = m_targetBottom;
+		break;
+	    case kLeft:
+		location = m_targetLeft;
+		break;
+	    case kRight:
+		location = m_targetRight;
+		break;
+	    }
 	}
-	break;
-    case kTop:
-	{
-	    Synchronized mutex(m_sem);
-	    location = m_targetTop;
-	}
-	break;
-    case kBottom:
-	{
-	    Synchronized mutex(m_sem);
-	    location = m_targetBottom;
-	}
-	break;
-    case kLeft:
-	{
-	    Synchronized mutex(m_sem);
-	    location = m_targetLeft;
-	}
-	break;
-    case kRight:
-	{
-	    Synchronized mutex(m_sem);
-	    location = m_targetRight;
-	}
-	break;
-    default:
-	location.id = which;
-	location.angle = 0.0;
-	location.distance = 0.0;
-	location.valid = false;
     }
 
     return location;
@@ -220,12 +251,16 @@ Target::TargetLocation Target::GetTarget( TargetID which )
 void Target::Run()
 {
     while (1) {
-	if (GetImage()) {
-	    if (FindParticles() && AnalyzeParticles()) {
-		// store the analysis results
-		{
-		    Synchronized mutex(m_sem);
+	if (m_newImage && GetImage()) {
+	    bool result = FindParticles() && AnalyzeParticles();
+	    {
+		Synchronized mutex(m_sem);
 
+		m_newImage = false;
+		m_processingComplete = true;
+		m_targetsFound = result;
+
+		if (result) {
 		    m_targetCenter.angle = m_centerAngle;
 		    m_targetCenter.distance = m_centerDistance;
 		    m_targetCenter.valid = true;
@@ -247,11 +282,7 @@ void Target::Run()
 		    m_targetRight.angle = m_rightAngle;
 		    m_targetRight.distance = m_rightDistance;
 		    m_targetRight.valid = !m_rightClipped;
-		}
-	    } else {
-		{
-		    Synchronized mutex(m_sem);
-
+		} else {
 		    m_targetCenter.valid = false;
 		    m_targetTop.valid = false;
 		    m_targetBottom.valid = false;
@@ -259,9 +290,12 @@ void Target::Run()
 		    m_targetRight.valid = false;
 		}
 	    }
+
 	    SaveImages();
-	    Wait(4.0);		// debugging aid; remove when this is working
 	}
+
+	// no thrashing!
+	Wait(0.10);
     }
 }
 
@@ -630,17 +664,20 @@ bool Target::AnalyzeParticles()
     double centerX;
     if (m_pTop && m_pBottom) {
 	centerX = (m_pTop->xCenter + m_pBottom->xCenter) / 2.;
+	m_centerAngle = atan((centerX - (WIDTH/2)) / IMAGE_PLANE) * DEGREES;
+	printf("center angle %g degrees\n", m_centerAngle);
     } else if (m_pTop) {
 	centerX = m_pTop->xCenter;
+	m_centerAngle = m_topAngle;
+	m_bottomAngle = m_topAngle;  // best available estimate
     } else if (m_pBottom) {
 	centerX = m_pBottom->xCenter;
+	m_centerAngle = m_bottomAngle;
+	m_topAngle = m_bottomAngle;  // best available estimate
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
 	return false;
     }
-
-    m_centerAngle = atan((centerX - (WIDTH/2)) / IMAGE_PLANE) * DEGREES;
-    printf("center angle %g degrees\n", m_centerAngle);
 
     double leftWidthReal;
     double leftWidthImage;

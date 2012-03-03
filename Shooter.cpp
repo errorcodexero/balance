@@ -151,9 +151,17 @@ void Shooter::SetSpeed( float speed )
 
 void Shooter::SetTarget( int target, float distance, float adjust )
 {
+#if 0
+    // these constants for distances in feet
     const float ballistic_low[3] = { -415.0, 136.3, -4.000 };	// wild guess
     const float ballistic_mid[3] = { -75.00, 98.33, -2.777 };
     const float ballistic_high[3] = { 265.0, 60.33, -1.556 };
+#else
+    // these constants for distances in inches
+    const float ballistic_low[3] = { -415.0, 136.3/12., -4.000/144. };	// wild guess
+    const float ballistic_mid[3] = { -75.00, 98.33/12., -2.777/144. };
+    const float ballistic_high[3] = { 265.0, 60.33/12., -1.556/144. };
+#endif
 
     const float *coeff;
 

@@ -20,6 +20,8 @@ void MyRobot::TeleopInit()
     else
 	EnableVoltageControl();
 
+    fireControl = kManual;
+
     SmartDashboard::Log("Teleop", "Robot State");
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
@@ -52,7 +54,12 @@ void MyRobot::TeleopPeriodic()
 
     bool dsd1 = pIO->GetDigital(1);	// pushbutton, fire control
     bool dsd2 = pIO->GetDigital(2);	// key switch, teach mode
-    bool dsd3 = pIO->GetDigital(3);	// pushbotton, store
+    bool dsd3 = pIO->GetDigital(3);	// pushbutton, store
+    bool dsd4 = pIO->GetDigital(4);	// pushbutton, target top
+    bool dsd5 = pIO->GetDigital(5);	// pushbutton, target left
+    bool dsd6 = pIO->GetDigital(6);	// pushbutton, target right
+    bool dsd7 = pIO->GetDigital(7);	// pushbutton, target bottom
+    bool dsd8 = pIO->GetDigital(8);	// pushbutton, target center
 
     switch (dsa1) {
     case 2:	// up, forward
@@ -77,75 +84,143 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
-    float s = 0.500 + (dsa3 * 0.400);
-    shooter.SetSpeed(s);
-    switch (dsa4) {
-    case 2:	// up, start
-	shooter.Start();
-	break;
-    case 1:	// center-off, no change
-	break;
-    case 0:	// down, stop
-	shooter.Stop();
-	break;
-    }
-    shooter.Run();
+    if (dsd4 || dsd5 || dsd6 || dsd7 || dsd8) {
+	switch (fireControl) {
+	case kManual:
+	    illuminator.Set(Relay::kOn);
+	    target.StartAcquisition();
+	    fireControl = kLooking;
+	    break;
 
-    // This will repeat fire if the button is held down, OK?
-    if (dsd1) {
-	shooter.Shoot();
-    }
+	case kLooking:
+	    if (target.ProcessingComplete()) {
+		if (target.TargetsFound()) {
+		    Target::TargetID id = dsd4 ? Target::kTop
+					: dsd5 ? Target::kLeft
+					: dsd6 ? Target::kRight
+					: dsd7 ? Target::kBottom
+					: Target::kCenter;
 
-    illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
-
-#if 0
-    if (dsd2) {
-	TargetLocation location = target.GetTarget( which target? );
-	if (location.valid) {
-	    // are we on target?
-	    // do we need to turn?
-	    // how much to turn?
-	    // how do we control the drive platform?
-	}
-
-    }
-#endif
-
-    if (balance.IsBalanced()) {
-	drive.Drive(0.0F, 0.0F);
-    } else {
-	if (rightTop) {
-	    balance.Start( false, false );
-	} else {
-	    balance.Stop();
-	    switch (driveMode) {
-	    case kFlightStick:
-		    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
-		    break;
-	    case kArcade:
-		    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-		    break;
-	    case kXY:
-		    if (rightY > 0.10) {
-			drive.ArcadeDrive( rightY, rightX, !rightTrigger );
-		    } else {
-			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-		    }
-		    break;
-	    case kTwoStick:
-		    drive.TankDrive( rightY, leftY );
-		    break;
+		    targetLocation = target.GetTargetLocation(id);
+		    // turn toward the target
+		    EnablePositionControl();
+		    (void) TurnToPosition(targetLocation.angle, 2.0F);
+		    fireControl = kTurning;
+		} else {
+		    // couldn't identify target
+		    fireControl = kNoTarget;
+		}
 	    }
+	    break;
+
+	case kTurning:
+	    if (TurnToPosition(targetLocation.angle, 2.0F)) {
+		// If the entire target was already visible,
+		// assume we've turned the right amount and
+		// fire up the shooter.  Else take another picture.
+		if (targetLocation.valid) {
+		    // Start the shooter.
+		    // TBD: check adjustment range (dsa3) here
+		    shooter.SetTarget(targetLocation.height,
+				      targetLocation.distance,
+				      (dsa3-0.5)*2.);
+		    shooter.Start();
+		    fireControl = kShooting;
+		} else {
+		    // More of the target should be in view now.
+		    // Take another picture and reposition.
+		    target.StartAcquisition();
+		    fireControl = kLooking;
+		}
+	    }
+	    break;
+
+	case kShooting:
+	    // Here's where a "ball ready" sensor would be helpful.
+	    if (shooter.IsReady()) {
+		shooter.Shoot();
+	    }
+	    shooter.Run();
+	    break;
+
+	case kNoTarget:
+	    break;
 	}
-	balance.Run();
-    }
+    } else {
+	if (fireControl != kManual) {
+	    // restore manual controls
+	    if (controlMode == kSpeed)
+		EnableSpeedControl();
+	    else
+		EnableVoltageControl();
+
+	    shooter.Stop();
+	}
+
+	illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
+
+	float s = 0.500 + (dsa3 * 0.400);
+	shooter.SetSpeed(s);
+	switch (dsa4) {
+	case 2:	// up, start
+	    shooter.Start();
+	    break;
+	case 1:	// center-off, no change
+	    break;
+	case 0:	// down, stop
+	    shooter.Stop();
+	    break;
+	}
+	shooter.Run();
+
+	// This will repeat fire if the button is held down, OK?
+	if (dsd1) {
+	    shooter.Shoot();
+	}
+
+#if 0 // disable auto-balance code for now
+
+	if (balance.IsBalanced()) {
+	    drive.Drive(0.0F, 0.0F);
+	} else {
+	    if (rightTop) {
+		balance.Start( false, false );
+	    } else {
+		balance.Stop();
+#endif
+		switch (driveMode) {
+		case kFlightStick:
+			drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
+			break;
+		case kArcade:
+			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+			break;
+		case kXY:
+			if (rightY > 0.10) {
+			    drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+			} else {
+			    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+			}
+			break;
+		case kTwoStick:
+			drive.TankDrive( rightY, leftY );
+			break;
+		}
+
+#if 0 // disable auto-balance code
+
+	    }
+	    balance.Run();
+	}
+#endif
 
 #if 0
-    SmartDashboard::Log( motor_right_1.Get(), "Right1" );
-    SmartDashboard::Log( motor_right_2.Get(), "Right2" );
-    SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
-    SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
+	SmartDashboard::Log( motor_right_1.Get(), "Right1" );
+	SmartDashboard::Log( motor_right_2.Get(), "Right2" );
+	SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
+	SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
 #endif
+    }
 }
 
 void MyRobot::TeleopContinuous()
