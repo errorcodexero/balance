@@ -119,12 +119,15 @@ void MyRobot::TeleopPeriodic()
 		// assume we've turned the right amount and
 		// fire up the shooter.  Else take another picture.
 		if (targetLocation.valid) {
-		    // Start the shooter.
-		    // TBD: check adjustment range (dsa3) here
-		    shooter.SetTarget(targetLocation.height,
-				      targetLocation.distance,
-				      (dsa3-0.5)*2.);
-		    shooter.Start();
+		    if (targetLocation.id != Target::kCenter) {
+			// Start the shooter (unless we're aimed at
+			// the center of the target array.)
+			// TBD: check adjustment range (dsa3) here
+			shooter.SetTarget(targetLocation.height,
+					  targetLocation.distance,
+					  (dsa3-0.5)*2.);
+			shooter.Start();
+		    }
 		    fireControl = kShooting;
 		} else {
 		    // More of the target should be in view now.
