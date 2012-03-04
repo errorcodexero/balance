@@ -5,6 +5,7 @@
 #define _MYROBOT_H_
 
 #include <WPILib.h>
+#include "xCANJaguar.h"
 #include "xCounter.h"
 #include "xGearTooth.h"
 #include "xPIDController.h"
@@ -26,6 +27,8 @@ public:
     void EnableSpeedControl();
     void EnablePositionControl();
     bool TurnToPosition( float angle, float tolerance );
+    double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name );
+    void StopTheWorld();
 
     void DisabledInit();
     void AutonomousInit();
@@ -52,7 +55,7 @@ private:
     ///////////////////////////////////////////////////////////////////
 
     // motor controllers
-    CANJaguar motor_right_1, motor_right_2,
+    xCANJaguar motor_right_1, motor_right_2,
 	      motor_left_1, motor_left_2;
 
     // Gyro (rate of pitch/yaw) inputs
@@ -102,14 +105,18 @@ private:
     Target::TargetLocation targetLocation;
     enum { kManual, kLooking, kTurning, kShooting, kNoTarget } fireControl;
 
+    // Manual aiming "nudge"
+    bool turning;
+    bool turnComplete;
+
     ///////////////////////////////////////////////////////////////////
     // helper functions
     ///////////////////////////////////////////////////////////////////
 
-    static void DisableMotor( CANJaguar& motor );
-    static void EnableVoltageControl( CANJaguar& motor );
-    static void EnableSpeedControl( CANJaguar& motor );
-    static void EnablePositionControl( CANJaguar& motor );
+    static void DisableMotor( xCANJaguar& motor );
+    static void EnableVoltageControl( xCANJaguar& motor );
+    static void EnableSpeedControl( xCANJaguar& motor );
+    static void EnablePositionControl( xCANJaguar& motor );
 };
 
 #endif // _MYROBOT_H_

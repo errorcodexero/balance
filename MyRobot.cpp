@@ -8,8 +8,8 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-    joy_right( 1 ),
-    joy_left(  2 ),
+    joy_right( 1, 4, 7 ),
+    joy_left(  2, 4, 7 ),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
@@ -68,7 +68,14 @@ void MyRobot::Safe()
     fireControl = kManual;
 }
 
-void MyRobot::DisableMotor( CANJaguar& motor )
+void MyRobot::StopTheWorld()
+{
+    Safe();
+    while (true) ;
+    // no return
+}
+
+void MyRobot::DisableMotor( xCANJaguar& motor )
 {
     motor.DisableControl();
     motor.SetSafetyEnabled(false);
@@ -85,10 +92,10 @@ void MyRobot::DisableMotors()
     DisableMotor( motor_right_2 );
 }
 
-void MyRobot::EnableVoltageControl( CANJaguar& motor )
+void MyRobot::EnableVoltageControl( xCANJaguar& motor )
 {
-    motor.ChangeControlMode( CANJaguar::kPercentVbus );
-    motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Coast );
+    motor.ChangeControlMode( xCANJaguar::kPercentVbus );
+    motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
 //    motor.SetSafetyEnabled( true );
     motor.EnableControl();
     motor.Set( 0.0F, 0 );
@@ -106,11 +113,11 @@ void MyRobot::EnableVoltageControl()
     drive.SetSafetyEnabled( true );
 }
 
-void MyRobot::EnableSpeedControl( CANJaguar& motor )
+void MyRobot::EnableSpeedControl( xCANJaguar& motor )
 {
-    motor.ChangeControlMode( CANJaguar::kSpeed );
-    motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Coast );
-    motor.SetSpeedReference( CANJaguar::kSpeedRef_QuadEncoder );
+    motor.ChangeControlMode( xCANJaguar::kSpeed );
+    motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
+    motor.SetSpeedReference( xCANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );  // or 250, or 300?
     motor.SetPID( 0.300, 0.003, 0.001 );
 //    motor.SetSafetyEnabled( true );
@@ -130,11 +137,11 @@ void MyRobot::EnableSpeedControl()
     drive.SetSafetyEnabled( true );
 }
 
-void MyRobot::EnablePositionControl( CANJaguar& motor )
+void MyRobot::EnablePositionControl( xCANJaguar& motor )
 {
-    motor.ChangeControlMode( CANJaguar::kPosition );
-    motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Brake );
-    motor.SetPositionReference( CANJaguar::kPosRef_QuadEncoder );
+    motor.ChangeControlMode( xCANJaguar::kPosition );
+    motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Brake );
+    motor.SetPositionReference( xCANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
     motor.SetPID( 1000.0, 0.0, 10.0 );		// TBD: tune this for position control
 //    motor.SetSafetyEnabled( true );
@@ -152,29 +159,51 @@ void MyRobot::EnablePositionControl()
     drive.SetSafetyEnabled( false );  // bypass the RobotDrive class for this mode
 }
 
+const float turnScale = 0.01415;	// calculated value
+
+double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name )
+{
+    double position;
+
+    jag.ClearError();
+    position = jag.GetPosition();
+    if (jag.StatusIsFatal()) {
+	int code = jag.GetError().GetCode();
+	printf("xCANJaguar %s error %d\n", name, code);
+	jag.ClearError();
+	if (jag.GetPowerCycled()) {
+	    printf("xCANJaguar %s was power cycled\n", name);
+	}
+	int faults = jag.GetFaults();
+	if (faults) {
+	    printf("xCANJaguar %s faults 0x%x\n", name, faults);
+	}
+	StopTheWorld();
+    }
+    return position / turnScale;
+}
+
 bool MyRobot::TurnToPosition( float angle, float tolerance )
 {
     // TBD: Tune scaling factor to match drive gear ration,
     //      wheel size and wheelbase.
-    const float scale = 3.0 / 360.;
-    float pos = angle * scale;
-    float threshold = tolerance * scale;
 
-    if (fabs(motor_left_1.GetPosition() - pos) < threshold &&
-	fabs(motor_left_1.GetPosition() - pos) < threshold &&
-	fabs(motor_left_1.GetPosition() + pos) < threshold &&
-	fabs(motor_left_1.GetPosition() + pos) < threshold)
+    if (fabs(GetJaguarPosition(motor_left_1,"left_1") - angle) < tolerance &&
+	fabs(GetJaguarPosition(motor_left_2,"left_2") - angle) < tolerance &&
+	fabs(GetJaguarPosition(motor_right_1,"right_1") - angle) < tolerance &&
+	fabs(GetJaguarPosition(motor_right_2,"right_2") - angle) < tolerance)
     {
 	DisableMotors();
 	return true;
     }
     else
     {
+	float pos = angle * turnScale;
 	motor_left_1.Set(pos, 1);
 	motor_left_2.Set(pos, 1);
-	motor_right_1.Set(-pos, 1);
-	motor_right_2.Set(-pos, 1);
-	CANJaguar::UpdateSyncGroup(1);
+	motor_right_1.Set(pos, 1);
+	motor_right_2.Set(pos, 1);
+	xCANJaguar::UpdateSyncGroup(1);
 	return false;
     }
 }

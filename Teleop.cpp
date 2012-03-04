@@ -49,7 +49,7 @@ void MyRobot::TeleopPeriodic()
     int dsa2 = (int)(pIO->GetAnalogInRatio(2) * 2.0 + 0.5);	// 3-position switch, cowcatcher
     float dsa3 = pIO->GetAnalogInRatio(3);			// potentiometer, shot speed
     int dsa4 = (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5);	// 3-position switch, shooter
-    int dsa5 = (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5);	// 3-position switch, illuminator
+    int dsa5 = (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5);	// 3-position switch, unused
 
     bool dsd1 = pIO->GetDigital(1);	// pushbutton, fire control
     bool dsd2 = pIO->GetDigital(2);	// key switch, teach mode
@@ -58,7 +58,7 @@ void MyRobot::TeleopPeriodic()
     bool dsd5 = pIO->GetDigital(5);	// pushbutton, target left
     bool dsd6 = pIO->GetDigital(6);	// pushbutton, target right
     bool dsd7 = pIO->GetDigital(7);	// pushbutton, target bottom
-    bool dsd8 = pIO->GetDigital(8);	// pushbutton, target center
+    bool dsd8 = pIO->GetDigital(8);	// toggle switch, illuminator
 
     switch (dsa1) {
     case 2:	// up, forward
@@ -83,7 +83,7 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
-    if (dsd4 || dsd5 || dsd6 || dsd7 || dsd8) {
+    if (dsd4 || dsd5 || dsd6 || dsd7) {
 	switch (fireControl) {
 	case kManual:
 	    illuminator.Set(Relay::kOn);
@@ -99,7 +99,7 @@ void MyRobot::TeleopPeriodic()
 					: dsd5 ? Target::kLeft
 					: dsd6 ? Target::kRight
 					: dsd7 ? Target::kBottom
-					: Target::kCenter;
+					: Target::kCenter;  // can't happen
 
 		    targetLocation = target.GetTargetLocation(id);
 		    // turn toward the target
@@ -160,8 +160,8 @@ void MyRobot::TeleopPeriodic()
 	    shooter.Stop();
 	}
 
-	printf("dsa5 = %d\n", dsa5);
-	illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
+	printf("dsd8 = %d\n", dsd8);
+	illuminator.Set( dsd8 ? Relay::kOn : Relay::kOff );
 
 	float s = 0.500 + (dsa3 * 0.400);
 	shooter.SetSpeed(s);
@@ -193,42 +193,71 @@ void MyRobot::TeleopPeriodic()
 		balance.Stop();
 #endif
 
-		switch (driveMode) {
-		case kFlightStick:
-			drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
-			break;
-		case kArcade:
-			drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
-			break;
-		case kXY:
-			if (rightY > 0.10) {
-			    drive.ArcadeDrive( rightY, rightX, !rightTrigger );
-			} else {
-			    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+		bool turnLeft10 = joy_right.GetRawButton(3);
+		bool turnRight10 = joy_right.GetRawButton(4);
+		bool turnLeft3 = joy_right.GetRawButton(5);
+		bool turnRight3 = joy_right.GetRawButton(6);
+		
+		if (turnLeft10 || turnRight10 || turnLeft3 || turnRight3)
+		{
+		    float angle = turnLeft10 ? -10.
+				: turnRight10 ? 10.
+				: turnLeft3  ? -3.
+				: turnRight3 ? 3.
+				: 0.;
+
+		    const float tolerance = 0.3;
+
+		    if (!turnComplete) {
+			if (!turning) {
+			    EnablePositionControl();
+			    turning = true;
+			    turnComplete = false;
 			}
-			break;
-		case kTwoStick:
-			drive.TankDrive( rightY, leftY );
-			break;
-		default:
-			printf("ERROR: Invalid drive mode (can't happen)\n");
+			if (TurnToPosition(angle, tolerance)) {
+			    printf("turn complete: %g %g %g %g\n",
+			      GetJaguarPosition(motor_left_1,"motor_left_1"),
+			      GetJaguarPosition(motor_left_2,"motor_left_2"),
+			      GetJaguarPosition(motor_right_1,"motor_right_1"),
+			      GetJaguarPosition(motor_right_2,"motor_right_2"));
+			    turnComplete = true;
+			}
+		    }
+		} else {
+		    if (turning) {
 			DisableMotors();
-			break;
+		    }
+		    turning = false;
+		    turnComplete = false;
+
+		    switch (driveMode) {
+		    case kFlightStick:
+			    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
+			    break;
+		    case kArcade:
+			    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+			    break;
+		    case kXY:
+			    if (rightY > 0.10) {
+				drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+			    } else {
+				drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+			    }
+			    break;
+		    case kTwoStick:
+			    drive.TankDrive( rightY, leftY );
+			    break;
+		    default:
+			    printf("ERROR: Invalid drive mode (can't happen)\n");
+			    DisableMotors();
+			    break;
+		    }
 		}
-
 #if 0 // disable auto-balance code
-
 	    }
-	    balance.Run();
 	}
 #endif
-
-#if 0
-	SmartDashboard::Log( motor_right_1.Get(), "Right1" );
-	SmartDashboard::Log( motor_right_2.Get(), "Right2" );
-	SmartDashboard::Log( motor_left_1.Get(),  "Left1" );
-	SmartDashboard::Log( motor_left_2.Get(),  "Left2" );
-#endif
+	balance.Run();
     }
 }
 
