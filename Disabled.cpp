@@ -19,11 +19,9 @@ void MyRobot::DisabledInit()
 
 void MyRobot::DisabledPeriodic()
 {
-    ;
 }
 
 void MyRobot::DisabledContinuous()
 {
-    taskDelay(0);
 }
 

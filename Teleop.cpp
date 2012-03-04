@@ -43,7 +43,6 @@ void MyRobot::TeleopPeriodic()
     bool rightTrigger = joy_right.GetTrigger();
     bool rightTop     = joy_right.GetTop();
 
-
     DriverStation *pDS = DriverStation::GetInstance();
     DriverStationEnhancedIO *pIO = &pDS->GetEnhancedIO();
     int dsa1 = (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5);	// 3-position switch, pickup
@@ -88,6 +87,7 @@ void MyRobot::TeleopPeriodic()
 	switch (fireControl) {
 	case kManual:
 	    illuminator.Set(Relay::kOn);
+	    DisableMotors();
 	    target.StartAcquisition();
 	    fireControl = kLooking;
 	    break;
@@ -160,6 +160,7 @@ void MyRobot::TeleopPeriodic()
 	    shooter.Stop();
 	}
 
+	printf("dsa5 = %d\n", dsa5);
 	illuminator.Set( (dsa5 == 2) ? Relay::kOn : Relay::kOff );
 
 	float s = 0.500 + (dsa3 * 0.400);
@@ -191,6 +192,7 @@ void MyRobot::TeleopPeriodic()
 	    } else {
 		balance.Stop();
 #endif
+
 		switch (driveMode) {
 		case kFlightStick:
 			drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
@@ -207,6 +209,10 @@ void MyRobot::TeleopPeriodic()
 			break;
 		case kTwoStick:
 			drive.TankDrive( rightY, leftY );
+			break;
+		default:
+			printf("ERROR: Invalid drive mode (can't happen)\n");
+			DisableMotors();
 			break;
 		}
 
@@ -228,5 +234,4 @@ void MyRobot::TeleopPeriodic()
 
 void MyRobot::TeleopContinuous()
 {
-    taskDelay(0);
 }

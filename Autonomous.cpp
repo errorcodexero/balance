@@ -19,11 +19,9 @@ void MyRobot::AutonomousInit()
 
 void MyRobot::AutonomousPeriodic()
 {
-    ;
 }
 
 void MyRobot::AutonomousContinuous()
 {
-    taskDelay(0);
 }
 

@@ -89,7 +89,7 @@ void MyRobot::EnableVoltageControl( CANJaguar& motor )
 {
     motor.ChangeControlMode( CANJaguar::kPercentVbus );
     motor.ConfigNeutralMode( CANJaguar::kNeutralMode_Coast );
-    motor.SetSafetyEnabled( true );
+//    motor.SetSafetyEnabled( true );
     motor.EnableControl();
     motor.Set( 0.0F, 0 );
 }
@@ -101,8 +101,8 @@ void MyRobot::EnableVoltageControl()
     EnableVoltageControl( motor_left_2 );
     EnableVoltageControl( motor_right_2 );
 
-    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
     drive.SetMaxOutput( 1.0 );	// 100% of Vbus
+    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
     drive.SetSafetyEnabled( true );
 }
 
@@ -113,7 +113,7 @@ void MyRobot::EnableSpeedControl( CANJaguar& motor )
     motor.SetSpeedReference( CANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );  // or 250, or 300?
     motor.SetPID( 0.300, 0.003, 0.001 );
-    motor.SetSafetyEnabled( true );
+//    motor.SetSafetyEnabled( true );
     motor.EnableControl();
     motor.Set( 0.0F, 0 );
 }
@@ -125,8 +125,8 @@ void MyRobot::EnableSpeedControl()
     EnableSpeedControl( motor_left_2 );
     EnableSpeedControl( motor_right_2 );
 
-    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
     drive.SetMaxOutput( 200 );			// 200 RPM is somewhat slower than top speed
+    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
     drive.SetSafetyEnabled( true );
 }
 
@@ -137,7 +137,7 @@ void MyRobot::EnablePositionControl( CANJaguar& motor )
     motor.SetPositionReference( CANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
     motor.SetPID( 1000.0, 0.0, 10.0 );		// TBD: tune this for position control
-    motor.SetSafetyEnabled( true );
+//    motor.SetSafetyEnabled( true );
     motor.EnableControl( 0.0 );
     motor.Set( 0.0F, 0 );
 }
@@ -149,7 +149,7 @@ void MyRobot::EnablePositionControl()
     EnablePositionControl( motor_left_2 );
     EnablePositionControl( motor_right_2 );
 
-    drive.SetSafetyEnabled( false );  // bypass the RobotDrive class for this
+    drive.SetSafetyEnabled( false );  // bypass the RobotDrive class for this mode
 }
 
 bool MyRobot::TurnToPosition( float angle, float tolerance )
