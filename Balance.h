@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #ifndef _BALANCE_H_
 #define _BALANCE_H_
@@ -34,10 +34,10 @@ public:
     ~Balance();
     
     void InitBalance();
-    void Start( bool reverse, bool startOnRamp );
+    void Start( bool reverse = false, bool startOnRamp = false );
     void Stop();
 
-    void Run();
+    bool Run();
 
     float GetSpeed();
     bool IsRunning();

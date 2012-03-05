@@ -5,7 +5,7 @@
 /*----------------------------------------------------------------------------*/
 
 // sample robot code
-// Steve Tarr - team 1425 mentor - 29-Jan-2012
+// Steve Tarr - team 1425 mentor
 //
 // xGearTooth is a copy of the WPILib GearTooth class, but based on xCounter
 // rather than Counter and with the addition of the PIDSource interface.

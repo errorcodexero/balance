@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #include <stdLib.h>
 #include <string.h>

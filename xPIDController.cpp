@@ -5,7 +5,7 @@
 /*----------------------------------------------------------------------------*/
 
 // sample robot code
-// Steve Tarr - team 1425 mentor - 29-Jan-2012
+// Steve Tarr - team 1425 mentor
 //
 // xPIDController is a copy of the WPILib PIDController class with some extra
 // debugging interfaces.

@@ -5,7 +5,7 @@
 /*----------------------------------------------------------------------------*/
 
 // sample robot code
-// Steve Tarr - team 1425 mentor - 29-Jan-2012
+// Steve Tarr - team 1425 mentor
 //
 // xCounter is a copy of the WPILib Counter class with the addition of two
 // member functions that manipulate the underlying timer/counter in the FPGA:

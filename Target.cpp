@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
 #include <math.h>
@@ -407,7 +407,7 @@ bool Target::FindParticles()
 
     // extract the blue plane
     if (!imaqExtractColorPlanes(m_cameraImage.GetImaqImage(), IMAQ_RGB,
-    		NULL, NULL, m_monoImage.GetImaqImage()))
+    		m_monoImage.GetImaqImage(), NULL, NULL))
     {
 	printf("%s: imaqExtractColorPlanes FAILED\n", __FUNCTION__);
 	return false;

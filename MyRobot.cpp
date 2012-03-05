@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
 #include <math.h>
@@ -8,8 +8,7 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-    joy_right( 1 ),
-    joy_left(  2 ),
+    m_oi(),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
@@ -20,54 +19,42 @@ MyRobot::MyRobot() :
     cowcatcher( 1 ),
     ball_pickup( 2, Relay::kBothDirections ),
     illuminator( 3, Relay::kForwardOnly ),
-    driveChooser(),
-    driveMode( kFlightStick ),
-    controlChooser(),
-    controlMode( kVoltage ),
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
-    balance( drive, pitch ),
     pickup( ball_pickup ),
     shooter( 1, 2, 3, 4, 2 ),
     target(),
-    fireControl(kManual)
+    m_driveCommand(*this),
+    m_turnCommand(*this),
+    m_shootCommand(*this),
+    m_balance( drive, pitch ),
+    driveMode(kManual)
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
-
-    driveChooser.AddDefault("FlightStick", (void *) kFlightStick);
-    driveChooser.AddObject("Arcade",       (void *) kArcade);
-    driveChooser.AddObject("X-Y",          (void *) kXY);
-    driveChooser.AddObject("TwoStick",     (void *) kTwoStick);
-    SmartDashboard::GetInstance()->PutData("Drive", &driveChooser);
-
-    controlChooser.AddDefault("Voltage", (void *) kVoltage);
-    controlChooser.AddObject("Speed",    (void *) kSpeed);
-    SmartDashboard::GetInstance()->PutData("Control", &controlChooser);
 }
 
 void MyRobot::RobotInit()
 {
-    balance.InitBalance();
+    m_balance.InitBalance();
     shooter.InitShooter();
     Safe();
 
-    target.StartAcquisition();
+    // We don't care about the camera right now, just that it's instantiated.
+    (void) AxisCamera::GetInstance();
 
-    SmartDashboard::Log("Initialized", "Robot State");
-
-    DriverStationLCD *lcd = DriverStationLCD::GetInstance();
-    lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Initialized");
-    lcd->UpdateLCD();
+    ShowState("Initialized","Idle");
 }
 
 void MyRobot::Safe()
 {
     compressor.Stop();
-    balance.Stop();
+    m_driveCommand.Stop();
+    m_turnCommand.Stop();
+    m_shootCommand.Stop();
+    m_balance.Stop();
     DisableMotors();
     pickup.Stop();
     shooter.Stop();
     cowcatcher.Set( false );
-    fireControl = kManual;
 }
 
 void MyRobot::StopTheWorld()
@@ -75,6 +62,16 @@ void MyRobot::StopTheWorld()
     Safe();
     while (true) ;
     // no return
+}
+
+void MyRobot::ShowState( char *mode, char *state )
+{
+    DriverStationLCD *lcd = DriverStationLCD::GetInstance();
+    lcd->PrintfLine(DriverStationLCD::kUser_Line1, mode);
+    lcd->PrintfLine(DriverStationLCD::kUser_Line2, state);
+    lcd->UpdateLCD();
+
+    SmartDashboard::Log(state, "Robot State");
 }
 
 void MyRobot::DisableMotor( xCANJaguar& motor )
@@ -195,7 +192,6 @@ bool MyRobot::TurnToPosition( float angle, float tolerance )
 	fabs(GetJaguarPosition(motor_right_1,"right_1") - angle) < tolerance &&
 	fabs(GetJaguarPosition(motor_right_2,"right_2") - angle) < tolerance)
     {
-	DisableMotors();
 	return true;
     }
     else

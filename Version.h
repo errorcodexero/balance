@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #ifndef _VERSION_H_
 #define _VERSION_H_

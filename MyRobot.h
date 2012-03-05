@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #ifndef _MYROBOT_H_
 #define _MYROBOT_H_
@@ -13,42 +13,23 @@
 #include "Pickup.h"
 #include "Shooter.h"
 #include "Target.h"
+#include "OI.h"
+#include "DriveCommand.h"
+#include "TurnCommand.h"
+#include "ShootCommand.h"
 
 class MyRobot : public IterativeRobot
 {
-public:
-    MyRobot();
-
-    void RobotInit();
-
-    void Safe();
-    void DisableMotors();
-    void EnableVoltageControl();
-    void EnableSpeedControl();
-    void EnablePositionControl();
-    bool TurnToPosition( float angle, float tolerance );
-    double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name );
-    void StopTheWorld();
-
-    void DisabledInit();
-    void AutonomousInit();
-    void TeleopInit();
-
-    void DisabledPeriodic();
-    void AutonomousPeriodic();
-    void TeleopPeriodic();
-
-    void DisabledContinuous();
-    void AutonomousContinuous();
-    void TeleopContinuous();
+    friend class DriveCommand;
+    friend class TurnCommand;
+    friend class ShootCommand;
 
 private:
     ///////////////////////////////////////////////////////////////////
     // driver station
     ///////////////////////////////////////////////////////////////////
 
-    // driver station inputs
-    Joystick joy_right, joy_left;
+    OI m_oi;
 
     ///////////////////////////////////////////////////////////////////
     // cRIO inputs and outputs
@@ -79,20 +60,8 @@ private:
     // robot control
     ///////////////////////////////////////////////////////////////////
 
-    // dashboard controls
-    SendableChooser driveChooser;
-    typedef enum { kFlightStick, kArcade, kXY, kTwoStick } DriveType;
-    DriveType driveMode;
-
-    SendableChooser controlChooser;
-    typedef enum { kVoltage, kSpeed } ControlMode;
-    ControlMode controlMode;
-
     // Tank/Arcade drive with 2 CIM motors and 1 or 2 joysticks.
     RobotDrive drive;
-
-    // Bridge Balance Control
-    Balance balance;
 
     // Ball pickup control
     Pickup pickup;
@@ -102,12 +71,18 @@ private:
 
     // Targeting
     Target target;
-    Target::TargetLocation targetLocation;
-    enum { kManual, kLooking, kTurning, kShooting, kNoTarget } fireControl;
 
-    // Manual aiming "nudge"
-    bool turning;
-    bool turnComplete;
+    ///////////////////////////////////////////////////////////////////
+    // commands
+    ///////////////////////////////////////////////////////////////////
+
+    DriveCommand m_driveCommand;
+    TurnCommand  m_turnCommand;
+    ShootCommand m_shootCommand;
+    Balance m_balance;
+
+    typedef enum { kManual, kTurn, kShoot, kBalance } DriveMode;
+    DriveMode driveMode;
 
     ///////////////////////////////////////////////////////////////////
     // helper functions
@@ -117,6 +92,37 @@ private:
     static void EnableVoltageControl( xCANJaguar& motor );
     static void EnableSpeedControl( xCANJaguar& motor );
     static void EnablePositionControl( xCANJaguar& motor );
+
+public:
+    MyRobot();
+
+    void RobotInit();
+
+    OI& GetOI() { return m_oi; };
+
+    void Safe();
+    void DisableMotors();
+    void EnableVoltageControl();
+    void EnableSpeedControl();
+    void EnablePositionControl();
+    bool TurnToPosition( float angle, float tolerance );
+    double GetJaguarPosition( xCANJaguar& jag, const char *name );
+    void StopTheWorld();
+
+    static void ShowState( char *mode, char *state );
+
+    void DisabledInit();
+    void AutonomousInit();
+    void TeleopInit();
+
+    void DisabledPeriodic();
+    void AutonomousPeriodic();
+    void TeleopPeriodic();
+
+    void DisabledContinuous();
+    void AutonomousContinuous();
+    void TeleopContinuous();
+
 };
 
 #endif // _MYROBOT_H_

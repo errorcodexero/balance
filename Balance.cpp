@@ -1,8 +1,9 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 25-Jan-2012
+// Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
 #include "Balance.h"
+#include "MyRobot.h"
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
@@ -166,7 +167,7 @@ void Balance::InitBalance()
     SmartDashboard::Log( tilt, "Balance.tilt" );
 
     state = kInitialized;
-    SmartDashboard::Log( "initialized", "Balance.state" );
+    MyRobot::ShowState("Teleop","Balance Init");
 
     running = false;
 }
@@ -179,12 +180,12 @@ void Balance::Start( bool startReverse, bool startOnRamp )
     // set the initial speed and position
     if (startOnRamp) {
 	state = kOnRamp;
-	SmartDashboard::Log( "onRamp",  "Balance.state" );
+	MyRobot::ShowState("Teleop", "Balance On Ramp");
 	speed = ramp_speed;
 	SmartDashboard::Log( speed,  "Balance.speed" );
     } else {
 	state = kApproach;
-	SmartDashboard::Log( "approach",  "Balance.state" );
+	MyRobot::ShowState("Teleop", "Balance Approach");
 	speed = approach_speed;
 	SmartDashboard::Log( speed,  "Balance.speed" );
     }
@@ -202,7 +203,7 @@ void Balance::Stop()
     drive.Drive( 0.0F, 0.0F );
 }
 
-void Balance::Run()
+bool Balance::Run()
 {
     // assume gyro is mounted so a "tilt up" rotation is negative when moving forward
     tilt = gyro.GetAngle();
@@ -217,7 +218,7 @@ void Balance::Run()
 	    printf("kApproach: tilt %4.2f\n", tilt);
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
-		SmartDashboard::Log( "onRamp",  "Balance.state" );
+		MyRobot::ShowState("Teleop", "Balance On Ramp");
 		speed = ramp_speed;
 		when = (long)(GetFPGATime() + ramp_time);
 	    }
@@ -228,7 +229,7 @@ void Balance::Run()
 	    printf("kOnRamp: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if ((timeleft <= 0) && (tilt < tilt_down)) {
 		state = kBraking;
-		SmartDashboard::Log( "braking",  "Balance.state" );
+		MyRobot::ShowState("Teleop", "Balance Braking");
 		speed = brake_speed;
 		when = (long)(GetFPGATime() + brake_time);
 	    }
@@ -239,15 +240,16 @@ void Balance::Run()
 	    printf("kBraking: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if (timeleft <= 0) {
 		state = kBalanced; // or so we hope
-		SmartDashboard::Log( "balanced",  "Balance.state" );
+		MyRobot::ShowState("Teleop", "Balance Balanced");
 		printf("kBalanced\n");
 		speed = 0.0F;
 	    }
 	}
 	// else balanced; nothing to do here
-
 	drive.Drive( reverse ? speed : -speed, 0.0F );
     }
+
+    return false;	// stay in this state until interrupted by driver
 }
 
 float Balance::GetSpeed()

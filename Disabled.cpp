@@ -1,5 +1,5 @@
 // sample robot code
-// Steve Tarr - team 1425 mentor - 11-Feb-2012
+// Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
 #include "MyRobot.h"
@@ -9,12 +9,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::DisabledInit()
 {
     Safe();
-
-    SmartDashboard::Log("Disabled", "Robot State");
-
-    DriverStationLCD *lcd = DriverStationLCD::GetInstance();
-    lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Disabled");
-    lcd->UpdateLCD();
+    ShowState("Disabled", "Safe");
 }
 
 void MyRobot::DisabledPeriodic()
