@@ -25,6 +25,9 @@ class MyRobot : public IterativeRobot
     friend class ShootCommand;
 
 private:
+    // shaft encoder counts per degree of robot rotation
+    static const double turnScale;
+
     ///////////////////////////////////////////////////////////////////
     // driver station
     ///////////////////////////////////////////////////////////////////
@@ -93,6 +96,8 @@ private:
     static void EnableSpeedControl( xCANJaguar& motor );
     static void EnablePositionControl( xCANJaguar& motor );
 
+    double GetJaguarAngle( xCANJaguar& jag, const char *name );
+
 public:
     MyRobot();
 
@@ -100,14 +105,13 @@ public:
 
     OI& GetOI() { return m_oi; };
 
+    void StopTheWorld();
     void Safe();
     void DisableMotors();
     void EnableVoltageControl();
     void EnableSpeedControl();
     void EnablePositionControl();
     bool TurnToPosition( float angle, float tolerance );
-    double GetJaguarPosition( xCANJaguar& jag, const char *name );
-    void StopTheWorld();
 
     static void ShowState( char *mode, char *state );
 

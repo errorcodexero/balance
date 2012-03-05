@@ -47,10 +47,10 @@ bool TurnCommand::Run()
 	if (turnComplete || turnTimer.HasPeriodPassed(2.0)) {
 	    printf("Manual turn %s: %g %g %g %g\n",
 	      turnComplete ? "complete" : "TIMEOUT",
-	      m_robot.GetJaguarPosition(m_robot.motor_left_1,"motor_left_1"),
-	      m_robot.GetJaguarPosition(m_robot.motor_left_2,"motor_left_2"),
-	      m_robot.GetJaguarPosition(m_robot.motor_right_1,"motor_right_1"),
-	      m_robot.GetJaguarPosition(m_robot.motor_right_2,"motor_right_2"));
+	      m_robot.GetJaguarAngle(m_robot.motor_left_1,"left_1"),
+	      m_robot.GetJaguarAngle(m_robot.motor_left_2,"left_2"),
+	      m_robot.GetJaguarAngle(m_robot.motor_right_1,"right_1"),
+	      m_robot.GetJaguarAngle(m_robot.motor_right_2,"right_2"));
 	    m_robot.DisableMotors();
 	    turnComplete = true;  // even if it's not true
 	    MyRobot::ShowState("Teleop", "Turn Complete");

@@ -23,7 +23,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	ADJUST		6.0F	// speed adjustment range (%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
 // stupid WPILib timers are only 1s resolution
-#define SHOT_TIME	1.0F	// time to cycle injector up or down
+#define SHOT_TIME	0.8F	// time to cycle injector up
+#define RELEASE_TIME	1.2F	// time to cycle injector down
 
 Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
 		  int bottom_geartooth_channel, int top_geartooth_channel,
@@ -34,7 +35,7 @@ Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
     geartooth_top(top_geartooth_channel),
     injector(injector_channel),
     pid_p(PID_P), pid_i(PID_I), pid_d(PID_D), drive_ratio(DRIVE_RATIO),
-    tolerance(TOLERANCE), shot_time(SHOT_TIME),
+    tolerance(TOLERANCE), shot_time(SHOT_TIME), release_time(RELEASE_TIME),
     pid_bottom( pid_p, pid_i, pid_d, &geartooth_bottom, &motor_bottom ),
     pid_top( pid_p, pid_i, pid_d, &geartooth_top, &motor_top ),
     speed_bottom(0.0F), speed_top(0.0F),
@@ -75,6 +76,11 @@ Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
 	printf("Preferences: save shot_time\n");
 	saveNeeded = true;
     }
+    if (!pref->ContainsKey( "Shooter.release_time" )) {
+	pref->PutDouble( "Shooter.release_time", RELEASE_TIME );
+	printf("Preferences: save release_time\n");
+	saveNeeded = true;
+    }
     if (saveNeeded) {
 	pref->Save();
 	printf("Preferences: saved\n");
@@ -100,6 +106,7 @@ void Shooter::InitShooter()
     drive_ratio = pref->GetDouble( "Shooter.drive_ratio", DRIVE_RATIO );
     tolerance = pref->GetDouble( "Shooter.tolerance", TOLERANCE );
     shot_time = pref->GetDouble( "Shooter.shot_time", SHOT_TIME );
+    release_time = pref->GetDouble( "Shooter.release_time", RELEASE_TIME );
 
     printf("InitShooter: pid_p = %7.4f\n", pid_p);
     printf("InitShooter: pid_i = %7.4f\n", pid_i);
@@ -107,17 +114,18 @@ void Shooter::InitShooter()
     printf("InitShooter: drive_ratio = %5.2f\n", drive_ratio);
     printf("InitShooter: tolerance = %4.1f\n", tolerance);
     printf("InitShooter: shot_time = %4.1f\n", shot_time);
+    printf("InitShooter: release_time = %4.1f\n", release_time);
 
     pid_bottom.SetInputRange( 0.0F, MAX_PPS );
     // PWMController doesn't like it when we use "1.0F" as the maximum.
-    pid_bottom.SetOutputRange( 0.0F, 0.98F );
+    pid_bottom.SetOutputRange( 0.0F, 0.99F );
     // This needs some calibration...
     pid_bottom.SetTolerance( tolerance );
     pid_bottom.SetPID( pid_p, pid_i, pid_d );
 
     pid_top.SetInputRange( 0.0F, MAX_PPS );
     // PWMController doesn't like it when we use "1.0F" as the maximum.
-    pid_top.SetOutputRange( 0.0F, 0.98F );
+    pid_top.SetOutputRange( 0.0F, 0.99F );
     // This needs some calibration...
     pid_top.SetTolerance( tolerance );
     pid_top.SetPID( pid_p, pid_i, pid_d );
@@ -211,9 +219,9 @@ void Shooter::Stop()
 
     pid_bottom.Reset();
     pid_top.Reset();
-    motor_bottom.PIDWrite( 0.0F );
+    motor_bottom.Disable();
     motor_bottom.SetSafetyEnabled(false);
-    motor_top.PIDWrite( 0.0F );
+    motor_top.Disable();
     motor_top.SetSafetyEnabled(false);
     geartooth_bottom.Stop();
     geartooth_top.Stop();
@@ -256,13 +264,13 @@ void Shooter::Run()
     case kIdle:
 	break;
     case kShooting:
-	if (shot_timer.HasPeriodPassed(SHOT_TIME)) {
+	if (shot_timer.HasPeriodPassed(shot_time)) {
 	    injector.Set(false);
 	    shooting = kResetting;
 	}
 	break;
     case kResetting:
-	if (shot_timer.HasPeriodPassed(SHOT_TIME)) {
+	if (shot_timer.HasPeriodPassed(release_time)) {
 	    shot_timer.Stop();
 	    shot_timer.Reset();
 	    shooting = kIdle;

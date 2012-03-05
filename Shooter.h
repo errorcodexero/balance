@@ -23,6 +23,7 @@ private:
     float drive_ratio;
     float tolerance;
     float shot_time;
+    float release_time;
 
     // motor speed controllers
     xPIDController pid_bottom, pid_top;

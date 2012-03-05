@@ -44,6 +44,13 @@ void MyRobot::RobotInit()
     ShowState("Initialized","Idle");
 }
 
+void MyRobot::StopTheWorld()
+{
+    Safe();
+    while (!IsDisabled())
+	;
+}
+
 void MyRobot::Safe()
 {
     compressor.Stop();
@@ -55,13 +62,6 @@ void MyRobot::Safe()
     pickup.Stop();
     shooter.Stop();
     cowcatcher.Set( false );
-}
-
-void MyRobot::StopTheWorld()
-{
-    Safe();
-    while (true) ;
-    // no return
 }
 
 void MyRobot::ShowState( char *mode, char *state )
@@ -77,15 +77,15 @@ void MyRobot::ShowState( char *mode, char *state )
 void MyRobot::DisableMotor( xCANJaguar& motor )
 {
     motor.DisableControl();
-    motor.SetSafetyEnabled(false);
+    motor.SetSafetyEnabled(false);	// CANJaguar *should* do this
 }
 
 void MyRobot::DisableMotors()
 {
-    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
-    drive.SetSafetyEnabled( false );
+    drive.StopMotor();
+    drive.SetSafetyEnabled( false );	// RobotDrive *should* do this
 
-    DisableMotor( motor_left_1 );
+    DisableMotor( motor_left_1 );	// RobotDrive *should* do this as well
     DisableMotor( motor_left_2 );
     DisableMotor( motor_right_1 );
     DisableMotor( motor_right_2 );
@@ -95,8 +95,22 @@ void MyRobot::EnableVoltageControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kPercentVbus );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
-//    motor.SetSafetyEnabled( true );
+
+    // force change in control mode
     motor.EnableControl();
+
+    // Feed the watchdog now to avoid a race condition when enabling
+    //   motorSafetyHelper with the previous timer already expired.
+    motor.Set( 0.0F, 0 );
+
+    // Now it's safe to enable.
+    motor.SetSafetyEnabled( true );
+
+    // Set the timer a little longer than default
+    //   to allow for CAN timeouts and retries.
+    motor.SetExpiration( 0.5 );
+
+    // Feed the watchdog again with the new interval.
     motor.Set( 0.0F, 0 );
 }
 
@@ -108,8 +122,20 @@ void MyRobot::EnableVoltageControl()
     EnableVoltageControl( motor_right_2 );
 
     drive.SetMaxOutput( 1.0 );	// 100% of Vbus
+
+    // Feed the watchdog now to avoid a race condition when enabling
+    //   motorSafetyHelper with the previous timer already expired.
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
+
+    // Now it's safe to enable.
     drive.SetSafetyEnabled( true );
+
+    // Set the timer a little longer than default
+    //   to allow for CAN timeouts and retries.
+    drive.SetExpiration( 0.5 );
+
+    // Feed the watchdog again with the new interval.
+    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
 }
 
 void MyRobot::EnableSpeedControl( xCANJaguar& motor )
@@ -119,8 +145,22 @@ void MyRobot::EnableSpeedControl( xCANJaguar& motor )
     motor.SetSpeedReference( xCANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );  // or 250, or 300?
     motor.SetPID( 0.300, 0.003, 0.001 );
-//    motor.SetSafetyEnabled( true );
+
+    // force change in control mode
     motor.EnableControl();
+
+    // Feed the watchdog now to avoid a race condition when enabling
+    //   motorSafetyHelper with the previous timer already expired.
+    motor.Set( 0.0F, 0 );
+
+    // Now it's safe to enable.
+    motor.SetSafetyEnabled( true );
+
+    // Set the timer a little longer than default
+    //   to allow for CAN timeouts and retries.
+    motor.SetExpiration( 0.5 );
+
+    // Feed the watchdog again with the new interval.
     motor.Set( 0.0F, 0 );
 }
 
@@ -131,9 +171,21 @@ void MyRobot::EnableSpeedControl()
     EnableSpeedControl( motor_left_2 );
     EnableSpeedControl( motor_right_2 );
 
-    drive.SetMaxOutput( 200 );			// 200 RPM is somewhat slower than top speed
+    drive.SetMaxOutput( 300 );			// 300 RPM is close to practical top speed
+
+    // Feed the watchdog now to avoid a race condition when enabling
+    //   motorSafetyHelper with the previous timer already expired.
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
+
+    // Now it's safe to enable.
     drive.SetSafetyEnabled( true );
+
+    // Set the timer a little longer than default
+    //   to allow for CAN timeouts and retries.
+    drive.SetExpiration( 0.5 );
+
+    // Feed the watchdog again with the new interval.
+    drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
 }
 
 void MyRobot::EnablePositionControl( xCANJaguar& motor )
@@ -143,8 +195,22 @@ void MyRobot::EnablePositionControl( xCANJaguar& motor )
     motor.SetPositionReference( xCANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
     motor.SetPID( 1000.0, 0.0, 10.0 );		// TBD: tune this for position control
-//    motor.SetSafetyEnabled( true );
+
+    // force change in control mode
     motor.EnableControl( 0.0 );
+
+    // Feed the watchdog now to avoid a race condition when enabling
+    //   motorSafetyHelper with the previous timer already expired.
+    motor.Set( 0.0F, 0 );
+
+    // Now it's safe to enable.
+    motor.SetSafetyEnabled( true );
+
+    // Set the timer a little longer than default
+    //   to allow for CAN timeouts and retries.
+    motor.SetExpiration( 0.5 );
+
+    // Feed the watchdog again with the new interval.
     motor.Set( 0.0F, 0 );
 }
 
@@ -155,12 +221,18 @@ void MyRobot::EnablePositionControl()
     EnablePositionControl( motor_left_2 );
     EnablePositionControl( motor_right_2 );
 
-    drive.SetSafetyEnabled( false );  // bypass the RobotDrive class for this mode
+    // Bypass the RobotDrive class for this mode since it doesn't deal
+    //   well with arbitrarily large setpoints for multiple wheel rotations.
+    drive.SetSafetyEnabled( false );
 }
 
-const float turnScale = 0.01415;	// calculated value
+// shaft encoder counts per degree of robot rotation (when turning in place)
+// turnScale = (wheelbase / wheel diameter) * (wheel gear teeth / drive gear teeth) / 360 degrees
+//           = (  19.25   /      8.0      ) * (      36         /       17        ) / 360
+//
+const double MyRobot::turnScale = 0.01415;
 
-double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name )
+double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
 {
     double position;
 
@@ -187,10 +259,10 @@ bool MyRobot::TurnToPosition( float angle, float tolerance )
     // TBD: Tune scaling factor to match drive gear ration,
     //      wheel size and wheelbase.
 
-    if (fabs(GetJaguarPosition(motor_left_1,"left_1") - angle) < tolerance &&
-	fabs(GetJaguarPosition(motor_left_2,"left_2") - angle) < tolerance &&
-	fabs(GetJaguarPosition(motor_right_1,"right_1") - angle) < tolerance &&
-	fabs(GetJaguarPosition(motor_right_2,"right_2") - angle) < tolerance)
+    if (fabs(GetJaguarAngle(motor_left_1,"left_1") - angle) < tolerance &&
+	fabs(GetJaguarAngle(motor_left_2,"left_2") - angle) < tolerance &&
+	fabs(GetJaguarAngle(motor_right_1,"right_1") - angle) < tolerance &&
+	fabs(GetJaguarAngle(motor_right_2,"right_2") - angle) < tolerance)
     {
 	return true;
     }

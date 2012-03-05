@@ -56,6 +56,9 @@ void xCANJaguar::InitCANJaguar()
 		wpi_setWPIErrorWithContext(JaguarVersionError, buf);
 		return;
 	}
+
+	m_safetyHelper = new MotorSafetyHelper(this);
+
 	switch (m_controlMode)
 	{
 	case kPercentVbus:
@@ -66,7 +69,6 @@ void xCANJaguar::InitCANJaguar()
 	default:
 		break;
 	}
-	m_safetyHelper = new MotorSafetyHelper(this);
 
 	nUsageReporting::report(nUsageReporting::kResourceType_CANJaguar, m_deviceNumber, m_controlMode);
 }
@@ -413,6 +415,7 @@ void xCANJaguar::setTransaction(UINT32 messageID, const UINT8 *data, UINT8 dataS
 		if (localStatus != -44087) {
 		    break;
 		}
+		printf("CAN setTransaction send timeout %d\n", attempt);
 	    } else {
 		// Wait for an ack.
 		localStatus = receiveMessage(&ackMessageID, NULL, 0);
@@ -421,6 +424,7 @@ void xCANJaguar::setTransaction(UINT32 messageID, const UINT8 *data, UINT8 dataS
 		    if (localStatus != -44087) {
 			break;
 		    }
+		    printf("CAN setTransaction receive timeout %d\n", attempt);
 		} else {
 		    messageReceived = true;
 		}
@@ -469,6 +473,7 @@ void xCANJaguar::getTransaction(UINT32 messageID, UINT8 *data, UINT8 *dataSize)
 		if (localStatus != -44087) {
 		    break;
 		}
+		printf("CAN getTransaction send timeout %d\n", attempt);
 	    } else {
 		// Caller may have set bit31 for remote frame transmission
 		//   so clear invalid bits[31-29]
@@ -480,6 +485,7 @@ void xCANJaguar::getTransaction(UINT32 messageID, UINT8 *data, UINT8 *dataSize)
 		    if (localStatus != -44087) {
 			break;
 		    }
+		    printf("CAN getTransaction receive timeout %d\n", attempt);
 		} else {
 		    messageReceived = true;
 		}
@@ -760,6 +766,12 @@ void xCANJaguar::EnableControl(double encoderInitialPosition)
 		setTransaction(LM_API_VCOMP_T_EN, dataBuffer, dataSize);
 		break;
 	}
+
+	if (m_safetyHelper) {
+	    // feed first then enable so there's no race with the motor safety checker
+	    m_safetyHelper->Feed();
+	    m_safetyHelper->SetSafetyEnabled(true);
+	}
 }
 
 /**
@@ -789,6 +801,12 @@ void xCANJaguar::DisableControl()
 	case kVoltage:
 		setTransaction(LM_API_VCOMP_DIS, dataBuffer, dataSize);
 		break;
+	}
+
+	if (m_safetyHelper) {
+	    // disable so motor safety checker doesn't keep trying to
+	    //   disable the motor again
+	    m_safetyHelper->SetSafetyEnabled(false);
 	}
 }
 
