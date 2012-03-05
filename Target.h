@@ -101,9 +101,6 @@ private:
     double m_rightAngle;
     double m_rightDistance;
  
-    // initialization
-    void TargetInit();
-
     // targeting calculations
     bool GetImage();
     bool FindParticles();

@@ -8,8 +8,8 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
-    joy_right( 1, 4, 7 ),
-    joy_left(  2, 4, 7 ),
+    joy_right( 1 ),
+    joy_left(  2 ),
     motor_right_1( 6 ),
     motor_right_2( 8 ),
     motor_left_1(  7 ),
@@ -49,6 +49,8 @@ void MyRobot::RobotInit()
     balance.InitBalance();
     shooter.InitShooter();
     Safe();
+
+    target.StartAcquisition();
 
     SmartDashboard::Log("Initialized", "Robot State");
 

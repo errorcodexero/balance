@@ -16,11 +16,6 @@ void Target::TargetProcess( Target *t )
 Target::Target() :
     m_task( "TargetProcess", (FUNCPTR)TargetProcess )
 {
-    TargetInit();
-}
-
-void Target::TargetInit()
-{
     memset(m_falseColor, 0, sizeof(m_falseColor));
     for (int i = 1; i < 255; i++) {
 	switch ((i-1) % 6) {
@@ -78,14 +73,19 @@ void Target::TargetInit()
     m_targetRight.angle = 0.0;
     m_targetRight.distance = 0.0;
     m_targetRight.valid = false;
+
+    m_sem = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE);
+    m_task.Start( (UINT32) this );
 }
 
 Target::~Target()
 {
+    semDelete(m_sem);
 }
 
 void Target::StartAcquisition()
 {
+    printf("Target::StartAcquisition\n");
     {
 	Synchronized mutex(m_sem);
 	m_newImage = true;
@@ -280,10 +280,8 @@ void Target::Run()
 		    m_targetRight.valid = false;
 		}
 	    }
-
 	    SaveImages();
 	}
-
 	// no thrashing!
 	Wait(0.10);
     }
@@ -291,6 +289,7 @@ void Target::Run()
 
 bool Target::GetImage()
 {
+//  printf("Target::GetImage\n");
     long then = (long) GetFPGATime();
 
     AxisCamera& axisCamera = AxisCamera::GetInstance();
@@ -355,26 +354,28 @@ static void OverlayCenter( RGBImage *image, double x, double y )
 
 void Target::SaveImages()
 {
-    // long then = (long) GetFPGATime();
+    printf("Target::SaveImages\n");
 
-    if (!imaqWriteFile(m_cameraImage.GetImaqImage(), "/tmp/vision0-camera.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision0-camera.bmp\") FAILED\n", __FUNCTION__);
+    long then = (long) GetFPGATime();
+
+    if (!imaqWriteFile(m_cameraImage.GetImaqImage(), "/tmp/0000-camera.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/0000-camera.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-    if (!imaqWriteFile(m_monoImage.GetImaqImage(), "/tmp/vision1-monoImage.bmp", NULL)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision1-monoImage.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_monoImage.GetImaqImage(), "/tmp/0001-monoImage.bmp", NULL)) {
+	printf("%s: imaqWriteFile(\"/tmp/0001-monoImage.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-    if (!imaqWriteFile(m_threshold.GetImaqImage(), "/tmp/vision2-threshold.bmp", m_falseColor)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision2-threshold.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_threshold.GetImaqImage(), "/tmp/0002-threshold.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/0002-threshold.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-    if (!imaqWriteFile(m_convexHull.GetImaqImage(), "/tmp/vision3-convexHull.bmp", m_falseColor)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision3-convexHull.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_convexHull.GetImaqImage(), "/tmp/0003-convexHull.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/0003-convexHull.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
-    if (!imaqWriteFile(m_filtered.GetImaqImage(), "/tmp/vision4-filtered.bmp", m_falseColor)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision4-filtered.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_filtered.GetImaqImage(), "/tmp/0004-filtered.bmp", m_falseColor)) {
+	printf("%s: imaqWriteFile(\"/tmp/0004-filtered.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
 
@@ -389,17 +390,19 @@ void Target::SaveImages()
 
     imaqMergeOverlay(m_overlay.GetImaqImage(), m_overlay.GetImaqImage(), NULL, 0, NULL);
 
-    if (!imaqWriteFile(m_overlay.GetImaqImage(), "/tmp/vision5-overlay.bmp", FALSE)) {
-	printf("%s: imaqWriteFile(\"/tmp/vision5-overlay.bmp\") FAILED\n", __FUNCTION__);
+    if (!imaqWriteFile(m_overlay.GetImaqImage(), "/tmp/0005-overlay.bmp", FALSE)) {
+	printf("%s: imaqWriteFile(\"/tmp/0005-overlay.bmp\") FAILED\n", __FUNCTION__);
 	// ignore the error
     }
 
-    // long now = (long) GetFPGATime();
-    // printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
+    long now = (long) GetFPGATime();
+    printf("%s: image save took %ld microseconds\n", __FUNCTION__, (now - then));
 }
 
 bool Target::FindParticles()
 {
+    printf("Target::FindParticles\n");
+
     long then = (long) GetFPGATime();
 
     // extract the blue plane
@@ -413,7 +416,7 @@ bool Target::FindParticles()
     // select interesting particles
 #if 1
     if (!imaqThreshold(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
-    	/*rangeMin*/ 180, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
+    	/*rangeMin*/ 175, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
     {
 	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
 	return false;
@@ -518,6 +521,8 @@ bool Target::FindParticles()
 
 bool Target::AnalyzeParticles()
 {
+    printf("Target::AnalyzeParticles\n");
+
     long then = (long) GetFPGATime();
 
     if (m_numParticles < 3) {
@@ -558,8 +563,8 @@ bool Target::AnalyzeParticles()
     }
     // These limits are very large in order to accomodate
     // clipping and image distortions from the hoops and nets at close range.
-    double min_size = size * 0.25;
-    double max_size = size * 1.50;
+    double min_size = size * 0.20;
+    double max_size = size * 3.00;
 
     if (m_particles[0].size > max_size) {
 	printf("ERROR: particle 0 is unreasonably large, bad image\n");

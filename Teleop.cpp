@@ -72,6 +72,9 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
+#if 1
+    cowcatcher.Set( rightTrigger );
+#else
     switch (dsa2) {
     case 2:
 	cowcatcher.Set( false );
@@ -82,10 +85,12 @@ void MyRobot::TeleopPeriodic()
 	cowcatcher.Set( true );
 	break;
     }
+#endif
 
     if (dsd4 || dsd5 || dsd6 || dsd7) {
 	switch (fireControl) {
 	case kManual:
+	    printf("Starting targeting sequence! %d %d %d %d\n", dsd4, dsd5, dsd6, dsd7);
 	    illuminator.Set(Relay::kOn);
 	    DisableMotors();
 	    target.StartAcquisition();
@@ -94,7 +99,9 @@ void MyRobot::TeleopPeriodic()
 
 	case kLooking:
 	    if (target.ProcessingComplete()) {
+		printf("Target processing complete\n");
 		if (target.TargetsFound()) {
+		    printf("Targets found!\n");
 		    Target::TargetID id = dsd4 ? Target::kTop
 					: dsd5 ? Target::kLeft
 					: dsd6 ? Target::kRight
@@ -104,22 +111,29 @@ void MyRobot::TeleopPeriodic()
 		    targetLocation = target.GetTargetLocation(id);
 		    // turn toward the target
 		    EnablePositionControl();
-		    (void) TurnToPosition(targetLocation.angle, 2.0F);
+		    printf("Starting turn: %g degrees\n", targetLocation.angle);
+		    (void) TurnToPosition(targetLocation.angle, 0.50);
 		    fireControl = kTurning;
 		} else {
 		    // couldn't identify target
+		    printf("No targets visible\n");
 		    fireControl = kNoTarget;
 		}
 	    }
 	    break;
 
 	case kTurning:
-	    if (TurnToPosition(targetLocation.angle, 2.0F)) {
+	    if (TurnToPosition(targetLocation.angle, 0.50)) {
+		printf("Turn to target complete!\n");
 		// If the entire target was already visible,
 		// assume we've turned the right amount and
 		// fire up the shooter.  Else take another picture.
 		if (targetLocation.valid) {
-		    if (targetLocation.id != Target::kCenter) {
+		    printf("Starting shooter, distance = %g\n", targetLocation.distance);
+		    if (targetLocation.id = Target::kCenter) {
+			// If we're aimed at the center of the target array, just stop here.
+			fireControl = kNoTarget;
+		    } else {
 			// Start the shooter (unless we're aimed at
 			// the center of the target array.)
 			// TBD: check adjustment range (dsa3) here
@@ -127,9 +141,10 @@ void MyRobot::TeleopPeriodic()
 					  targetLocation.distance,
 					  (dsa3-0.5)*2.);
 			shooter.Start();
+			fireControl = kShooting;
 		    }
-		    fireControl = kShooting;
 		} else {
+		    printf("Taking another picture...\n");
 		    // More of the target should be in view now.
 		    // Take another picture and reposition.
 		    target.StartAcquisition();
@@ -152,18 +167,18 @@ void MyRobot::TeleopPeriodic()
     } else {
 	if (fireControl != kManual) {
 	    // restore manual controls
+	    printf("Targeting returning to manual control\n");
+	    shooter.Stop();
 	    if (controlMode == kSpeed)
 		EnableSpeedControl();
 	    else
 		EnableVoltageControl();
-
-	    shooter.Stop();
+	    fireControl = kManual;
 	}
 
-	printf("dsd8 = %d\n", dsd8);
 	illuminator.Set( dsd8 ? Relay::kOn : Relay::kOff );
 
-	float s = 0.500 + (dsa3 * 0.400);
+	float s = 0.400 + (dsa3 * 0.500);
 	shooter.SetSpeed(s);
 	switch (dsa4) {
 	case 2:	// up, start
@@ -206,7 +221,7 @@ void MyRobot::TeleopPeriodic()
 				: turnRight3 ? 3.
 				: 0.;
 
-		    const float tolerance = 0.3;
+		    const float tolerance = 0.50;
 
 		    if (!turnComplete) {
 			if (!turning) {
@@ -226,22 +241,26 @@ void MyRobot::TeleopPeriodic()
 		} else {
 		    if (turning) {
 			DisableMotors();
+			if (controlMode == kSpeed)
+			    EnableSpeedControl();
+			else
+			    EnableVoltageControl();
+			turning = false;
+			turnComplete = false;
 		    }
-		    turning = false;
-		    turnComplete = false;
 
 		    switch (driveMode) {
 		    case kFlightStick:
-			    drive.ArcadeDrive( rightY, -rightT, !rightTrigger );
+			    drive.ArcadeDrive( rightY, -rightT, true );
 			    break;
 		    case kArcade:
-			    drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+			    drive.ArcadeDrive( rightY, -rightX, true );
 			    break;
 		    case kXY:
 			    if (rightY > 0.10) {
-				drive.ArcadeDrive( rightY, rightX, !rightTrigger );
+				drive.ArcadeDrive( rightY, rightX, true );
 			    } else {
-				drive.ArcadeDrive( rightY, -rightX, !rightTrigger );
+				drive.ArcadeDrive( rightY, -rightX, true );
 			    }
 			    break;
 		    case kTwoStick:
