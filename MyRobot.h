@@ -111,7 +111,7 @@ public:
     void EnableVoltageControl();
     void EnableSpeedControl();
     void EnablePositionControl();
-    bool TurnToPosition( float angle, float tolerance );
+    bool TurnToAngle( float angle, float tolerance );
 
     static void ShowState( char *mode, char *state );
 

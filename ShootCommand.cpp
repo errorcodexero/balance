@@ -8,10 +8,11 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float ShootCommand::turnTolerance = 0.50;
+const float ShootCommand::turnTolerance = 0.80;
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
+    turnTimer.Start();
 }
 
 void ShootCommand::Start()
@@ -36,31 +37,75 @@ void ShootCommand::Start()
 void ShootCommand::Stop()
 {
     m_robot.DisableMotors();
-    turnTimer.Stop();
+    m_robot.shooter.Stop();
 }
 
 bool ShootCommand::Run()
 {
     OI& oi = m_robot.GetOI();
+    Target::TargetID id = oi.TargetTop() ? Target::kTop
+			: oi.TargetLeft() ? Target::kLeft
+			: oi.TargetRight() ? Target::kRight
+			: oi.TargetBottom() ? Target::kBottom
+			: Target::kCenter;  // can't happen
 
     switch (fireControl) {
     case kLooking:
 	if (m_robot.target.ProcessingComplete()) {
 	    printf("Target image processing complete\n");
-	    if (m_robot.target.TargetsFound()) {
+	    bool targetsFound = m_robot.target.TargetsFound();
+	    if (targetsFound) {
 		printf("Targets found\n");
-		Target::TargetID id = oi.TargetTop() ? Target::kTop
-				    : oi.TargetLeft() ? Target::kLeft
-				    : oi.TargetRight() ? Target::kRight
-				    : oi.TargetBottom() ? Target::kBottom
-				    : Target::kCenter;  // can't happen
-
 		targetLocation = m_robot.target.GetTargetLocation(id);
+	    }
+	    bool targetDebug = (oi.Extra() == 2);
+	    if (targetDebug) {
+		printf("Target DEBUG MODE\n");
+		// lie about the target, for debugging
+		switch (id) {
+		case Target::kTop:
+		    targetLocation.id = Target::kTop;
+		    targetLocation.height = 2;
+		    targetLocation.angle = 0.0;
+		    targetLocation.distance = 15. * 12.;
+		    targetLocation.valid = true;
+		    break;
+		case Target::kLeft:
+		    targetLocation.id = Target::kLeft;
+		    targetLocation.height = 1;
+		    targetLocation.angle = -10.0;
+		    targetLocation.distance = 12. * 12.;
+		    targetLocation.valid = true;
+		    break;
+		case Target::kRight:
+		    targetLocation.id = Target::kRight;
+		    targetLocation.height = 1;
+		    targetLocation.angle = -10.0;
+		    targetLocation.distance = 12. * 12.;
+		    targetLocation.valid = true;
+		    break;
+		case Target::kBottom:
+		    targetLocation.id = Target::kBottom;
+		    targetLocation.height = 0;
+		    targetLocation.angle = 0.0;
+		    targetLocation.distance = 9. * 12.;
+		    targetLocation.valid = true;
+		    break;
+		default:  // can't happen
+		    targetLocation.id = Target::kCenter;
+		    targetLocation.height = 1;
+		    targetLocation.angle = 0.0;
+		    targetLocation.distance = 6. * 12.;
+		    targetLocation.valid = true;
+		    break;
+		}
+	    }
 
+	    if (targetsFound || targetDebug) {
 		// start turn toward the target
 		printf("Starting turn: %g degrees\n", targetLocation.angle);
 		m_robot.EnablePositionControl();
-		turnTimer.Start();
+		turnTimer.Reset();
 		fireControl = kTurning;
 		MyRobot::ShowState("Teleop", "Turning");
 	    } else {
@@ -72,7 +117,7 @@ bool ShootCommand::Run()
 	break;
 
     case kTurning:
-	bool turnComplete = m_robot.TurnToPosition(targetLocation.angle, turnTolerance);
+	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle, turnTolerance);
 	if (turnComplete || turnTimer.HasPeriodPassed(2.0)) {
 	    printf("Target turn %s: %g %g %g %g\n",
 	      turnComplete ? "complete" : "TIMEOUT",

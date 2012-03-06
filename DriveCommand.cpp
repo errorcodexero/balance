@@ -19,7 +19,7 @@ DriveCommand::DriveCommand( MyRobot& theRobot ) : m_robot(theRobot)
     controlChooser.AddObject("Speed",    (void *) kSpeed);
     SmartDashboard::GetInstance()->PutData("Control", &controlChooser);
 
-    MyRobot::ShowState("Teleop", "Manual Drive");
+//  MyRobot::ShowState("Initialize", "Manual Drive");
 }
 
 void DriveCommand::Start()
@@ -32,10 +32,7 @@ void DriveCommand::Start()
     else
 	m_robot.EnableVoltageControl();
 
-    DriverStationLCD *lcd = DriverStationLCD::GetInstance();
-    lcd->PrintfLine(DriverStationLCD::kUser_Line1, "Teleop");
-    lcd->PrintfLine(DriverStationLCD::kUser_Line2, "Drive");
-    lcd->UpdateLCD();
+    MyRobot::ShowState("Teleop", "Drive");
 }
 
 void DriveCommand::Stop()

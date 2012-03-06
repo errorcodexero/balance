@@ -41,7 +41,7 @@ void MyRobot::RobotInit()
     // We don't care about the camera right now, just that it's instantiated.
     (void) AxisCamera::GetInstance();
 
-    ShowState("Initialized","Idle");
+    ShowState("Initialize","Idle");
 }
 
 void MyRobot::StopTheWorld()
@@ -254,21 +254,27 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
     return position / turnScale;
 }
 
-bool MyRobot::TurnToPosition( float angle, float tolerance )
+bool MyRobot::TurnToAngle( float angle, float tolerance )
 {
     // TBD: Tune scaling factor to match drive gear ration,
     //      wheel size and wheelbase.
 
-    if (fabs(GetJaguarAngle(motor_left_1,"left_1") - angle) < tolerance &&
-	fabs(GetJaguarAngle(motor_left_2,"left_2") - angle) < tolerance &&
-	fabs(GetJaguarAngle(motor_right_1,"right_1") - angle) < tolerance &&
-	fabs(GetJaguarAngle(motor_right_2,"right_2") - angle) < tolerance)
+    float l1 = GetJaguarAngle(motor_left_1,"left_1");
+    float l2 = GetJaguarAngle(motor_left_2,"left_2");
+    float r1 = GetJaguarAngle(motor_right_1,"right_1");
+    float r2 = GetJaguarAngle(motor_right_2,"right_2");
+
+    if (fabs(l1 - angle) < tolerance &&
+	fabs(l2 - angle) < tolerance &&
+	fabs(r1 - angle) < tolerance &&
+	fabs(r2 - angle) < tolerance)
     {
 	return true;
     }
     else
     {
 	float pos = angle * turnScale;
+	// printf("angle %g l1 %g l2 %g r1 %g r2 %g\n", angle, l1, l2, r1, r2);
 	motor_left_1.Set(pos, 1);
 	motor_left_2.Set(pos, 1);
 	motor_right_1.Set(pos, 1);

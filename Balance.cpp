@@ -167,7 +167,7 @@ void Balance::InitBalance()
     SmartDashboard::Log( tilt, "Balance.tilt" );
 
     state = kInitialized;
-    MyRobot::ShowState("Teleop","Balance Init");
+//  MyRobot::ShowState("Initialize","Balance Init");
 
     running = false;
 }

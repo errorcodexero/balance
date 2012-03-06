@@ -81,6 +81,22 @@ void MyRobot::TeleopPeriodic()
     }
 
     if (done) {
+	// stop this mode
+	switch (driveMode) {
+	case kManual:
+	    m_driveCommand.Stop();
+	    break;
+	case kTurn:
+	    m_turnCommand.Stop();
+	    break;
+	case kShoot:
+	    m_shootCommand.Stop();
+	    break;
+	case kBalance:
+	    m_balance.Stop();
+	    break;
+	}
+
 	// return to manual control
 	m_driveCommand.Start();
 	driveMode = kManual;
