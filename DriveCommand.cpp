@@ -53,16 +53,16 @@ bool DriveCommand::Run()
 
     switch (driveMode) {
     case kFlightStick:
-	m_robot.drive.ArcadeDrive( rightY, -rightT, true );
+	m_robot.drive.ArcadeDrive( rightY, -rightT, false );
 	break;
     case kArcade:
-	m_robot.drive.ArcadeDrive( rightY, -rightX, true );
+	m_robot.drive.ArcadeDrive( rightY, -rightX, false );
 	break;
     case kXY:
 	if (rightY > 0.10) {
-	    m_robot.drive.ArcadeDrive( rightY, rightX, true );
+	    m_robot.drive.ArcadeDrive( rightY, rightX, false );
 	} else {
-	    m_robot.drive.ArcadeDrive( rightY, -rightX, true );
+	    m_robot.drive.ArcadeDrive( rightY, -rightX, false );
 	}
 	break;
     case kTwoStick:

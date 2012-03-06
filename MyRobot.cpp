@@ -226,13 +226,21 @@ void MyRobot::EnablePositionControl()
     drive.SetSafetyEnabled( false );
 }
 
+// shaft encoder counts per inch of robot movement (straight-line movement)
+// driveScale = (1.0 inch / wheel circumference) * (wheel gear teeth / drive gear teeth);
+//            = (  1.0    /      (8.0 * PI)    ) * (      36         /       17        );
+//
+const double MyRobot::driveScale = 0.08426;
+
 // shaft encoder counts per degree of robot rotation (when turning in place)
-// turnScale = (wheelbase / wheel diameter) * (wheel gear teeth / drive gear teeth) / 360 degrees
-//           = (  19.25   /      8.0      ) * (      36         /       17        ) / 360
+// turnScale = (turn circumference / wheel circumference)
+//             * (wheel gear teeth / drive gear teeth) / 360 degrees
+//           = (    (19.25*PI)     /      (8.0*PI)      )
+//             * (      36         /       17        ) / 360
 //
 const double MyRobot::turnScale = 0.01415;
 
-double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
+double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name )
 {
     double position;
 
@@ -251,14 +259,48 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
 	}
 	StopTheWorld();
     }
-    return position / turnScale;
+    return position;
+}
+
+double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
+{
+    return GetJaguarPosition(jag, name) / driveScale;
+}
+
+bool MyRobot::DriveToPosition( float distance, float tolerance )
+{
+    float l1 = GetJaguarDistance(motor_left_1,"left_1");
+    float l2 = GetJaguarDistance(motor_left_2,"left_2");
+    float r1 = - GetJaguarDistance(motor_right_1,"right_1");
+    float r2 = - GetJaguarDistance(motor_right_2,"right_2");
+
+    if (fabs(l1 - distance) < tolerance &&
+	fabs(l2 - distance) < tolerance &&
+	fabs(r1 - distance) < tolerance &&
+	fabs(r2 - distance) < tolerance)
+    {
+	return true;
+    }
+    else
+    {
+	float pos = distance * driveScale;
+	// printf("distance %g l1 %g l2 %g r1 %g r2 %g\n", distance, l1, l2, r1, r2);
+	motor_left_1.Set(pos, 1);
+	motor_left_2.Set(pos, 1);
+	motor_right_1.Set(-pos, 1);
+	motor_right_2.Set(-pos, 1);
+	xCANJaguar::UpdateSyncGroup(1);
+	return false;
+    }
+}
+
+double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
+{
+    return GetJaguarPosition(jag, name) / turnScale;
 }
 
 bool MyRobot::TurnToAngle( float angle, float tolerance )
 {
-    // TBD: Tune scaling factor to match drive gear ration,
-    //      wheel size and wheelbase.
-
     float l1 = GetJaguarAngle(motor_left_1,"left_1");
     float l2 = GetJaguarAngle(motor_left_2,"left_2");
     float r1 = GetJaguarAngle(motor_right_1,"right_1");

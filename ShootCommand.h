@@ -16,7 +16,7 @@ private:
     MyRobot& m_robot;
 
     Target::TargetLocation targetLocation;
-    enum { kLooking, kTurning, kShooting, kNoTarget } fireControl;
+    enum { kLights, kCamera, kAction, kShooting, kNoTarget } fireControl;
     Timer turnTimer;
 
     static const float turnTolerance;

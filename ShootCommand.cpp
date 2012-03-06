@@ -29,9 +29,9 @@ void ShootCommand::Start()
 
     m_robot.DisableMotors();
     m_robot.illuminator.Set( Relay::kOn );
-    m_robot.target.StartAcquisition();
-    fireControl = kLooking;
-    MyRobot::ShowState("Teleop", "Looking");
+    turnTimer.Reset();
+    fireControl = kLights;
+    MyRobot::ShowState("Teleop", "Lights");
 }
 
 void ShootCommand::Stop()
@@ -50,7 +50,13 @@ bool ShootCommand::Run()
 			: Target::kCenter;  // can't happen
 
     switch (fireControl) {
-    case kLooking:
+    case kLights:
+	if (turnTimer.Get() > 0.5) {
+	    m_robot.target.StartAcquisition();
+	    fireControl = kCamera;
+	}
+	break;
+    case kCamera:
 	if (m_robot.target.ProcessingComplete()) {
 	    printf("Target image processing complete\n");
 	    bool targetsFound = m_robot.target.TargetsFound();
@@ -58,7 +64,7 @@ bool ShootCommand::Run()
 		printf("Targets found\n");
 		targetLocation = m_robot.target.GetTargetLocation(id);
 	    }
-	    bool targetDebug = (oi.Extra() == 2);
+	    bool targetDebug = oi.Teach();
 	    if (targetDebug) {
 		printf("Target DEBUG MODE\n");
 		// lie about the target, for debugging
@@ -73,14 +79,14 @@ bool ShootCommand::Run()
 		case Target::kLeft:
 		    targetLocation.id = Target::kLeft;
 		    targetLocation.height = 1;
-		    targetLocation.angle = -10.0;
+		    targetLocation.angle = -3.0;
 		    targetLocation.distance = 12. * 12.;
 		    targetLocation.valid = true;
 		    break;
 		case Target::kRight:
 		    targetLocation.id = Target::kRight;
 		    targetLocation.height = 1;
-		    targetLocation.angle = -10.0;
+		    targetLocation.angle = 10.0;
 		    targetLocation.distance = 12. * 12.;
 		    targetLocation.valid = true;
 		    break;
@@ -106,7 +112,7 @@ bool ShootCommand::Run()
 		printf("Starting turn: %g degrees\n", targetLocation.angle);
 		m_robot.EnablePositionControl();
 		turnTimer.Reset();
-		fireControl = kTurning;
+		fireControl = kAction;
 		MyRobot::ShowState("Teleop", "Turning");
 	    } else {
 		printf("No targets visible\n");
@@ -116,15 +122,16 @@ bool ShootCommand::Run()
 	}
 	break;
 
-    case kTurning:
+    case kAction:
 	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle, turnTolerance);
-	if (turnComplete || turnTimer.HasPeriodPassed(2.0)) {
+	if (turnComplete || turnTimer.Get() > 2.0) {
 	    printf("Target turn %s: %g %g %g %g\n",
 	      turnComplete ? "complete" : "TIMEOUT",
 	      m_robot.GetJaguarAngle(m_robot.motor_left_1,"left_1"),
 	      m_robot.GetJaguarAngle(m_robot.motor_left_2,"left_2"),
 	      m_robot.GetJaguarAngle(m_robot.motor_right_1,"right_1"),
 	      m_robot.GetJaguarAngle(m_robot.motor_right_2,"right_2"));
+	    m_robot.DisableMotors();
 
 	    // If the entire target was already visible and we've
 	    // completed a turn to that location, assume we've
@@ -152,7 +159,7 @@ bool ShootCommand::Run()
 		// More of the target should be in view now.
 		// Take another picture and reposition.
 		m_robot.target.StartAcquisition();
-		fireControl = kLooking;
+		fireControl = kCamera;
 		MyRobot::ShowState("Teleop", "Looking (again)");
 	    }
 	}

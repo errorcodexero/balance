@@ -20,9 +20,10 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	PID_I		0.001F
 #define	PID_D		0.000F
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
-#define	ADJUST		6.0F	// speed adjustment range (%)
+#define	ADJUST		4.0F	// speed adjustment range (%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
 // stupid WPILib timers are only 1s resolution
+#define	MOTOR_START	0.2F	// time to wait before encoder output is valid
 #define SHOT_TIME	0.8F	// time to cycle injector up
 #define RELEASE_TIME	1.2F	// time to cycle injector down
 
@@ -133,6 +134,12 @@ void Shooter::InitShooter()
     geartooth_bottom.SetAverageSize( 8 );
     geartooth_top.SetAverageSize( 8 );
 
+    geartooth_bottom.Start();
+    geartooth_top.Start();
+
+    motor_timer.Start();
+    shot_timer.Start();
+
     Log();
 }
 
@@ -149,27 +156,18 @@ void Shooter::Log()
 
 void Shooter::SetSpeed( float speed )
 {
-    // set motor speeds
     speed_bottom = speed * MAX_PPS;
     pid_bottom.SetSetpoint( speed_bottom );
     speed_top = speed_bottom * drive_ratio;
     pid_top.SetSetpoint( speed_top );
-    // Log();
 }
 
 void Shooter::SetTarget( int target, float distance, float adjust )
 {
-#if 0
-    // these constants for distances in feet
-    const float ballistic_low[3] = { -415.0, 136.3, -4.000 };	// wild guess
-    const float ballistic_mid[3] = { -75.00, 98.33, -2.777 };
-    const float ballistic_high[3] = { 265.0, 60.33, -1.556 };
-#else
     // these constants for distances in inches
     const float ballistic_low[3] = { -415.0, 136.3/12., -4.000/144. };	// wild guess
     const float ballistic_mid[3] = { -75.00, 98.33/12., -2.777/144. };
     const float ballistic_high[3] = { 265.0, 60.33/12., -1.556/144. };
-#endif
 
     const float *coeff;
 
@@ -188,18 +186,22 @@ void Shooter::SetTarget( int target, float distance, float adjust )
 	return;
     }
 
-    float speed = ((coeff[2] * distance) + coeff[1]) * distance + coeff[0];
-    speed *= 1.0 + adjust * ADJUST / 100.0F;
-    SetSpeed(speed);
+    float speed = coeff[0] + distance * (coeff[1] + (distance * coeff[2]));
+    speed *= (1.0 + adjust * ADJUST / 100.0F);
+    printf("Shooter height %d distance %g adjust %g speed %g\n",
+    		target, distance, adjust, speed);
+
+    speed_bottom = speed;
+    pid_bottom.SetSetpoint( speed_bottom );
+    speed_top = speed_bottom * drive_ratio;
+    pid_top.SetSetpoint( speed_top );
+
+    Log();
 }
 
 void Shooter::Start()
 {
     if (IsRunning()) return;
-
-    // enable the motor speed sensors (counters)
-    geartooth_bottom.Start();
-    geartooth_top.Start();
 
     // start the motor safety protection
     motor_bottom.SetSafetyEnabled(true);
@@ -208,6 +210,8 @@ void Shooter::Start()
     // start the PID controller
     pid_bottom.Enable();
     pid_top.Enable();
+
+    motor_timer.Reset();
 
     running = true;
     Log();
@@ -223,8 +227,6 @@ void Shooter::Stop()
     motor_bottom.SetSafetyEnabled(false);
     motor_top.Disable();
     motor_top.SetSafetyEnabled(false);
-    geartooth_bottom.Stop();
-    geartooth_top.Stop();
     running = false;
 
     Reset();
@@ -233,17 +235,17 @@ void Shooter::Stop()
 void Shooter::Shoot()
 {
     if (IsReady()) {
-	injector.Set( true );
-	shot_timer.Start();
+	injector.Set(true);
+	shot_timer.Reset();
 	shooting = kShooting;
     }
 }
 
 void Shooter::Reset()
 {
-    if (shooting != kShooting) {
+    if (shooting != kIdle) {
 	injector.Set(false);
-	shot_timer.Start();
+	shot_timer.Reset();
 	shooting = kResetting;
     }
 }
@@ -252,6 +254,8 @@ void Shooter::Run()
 {
     static int logCount = 0;
     if (IsRunning()) {
+	pid_bottom.SetSetpoint( speed_bottom );
+	pid_top.SetSetpoint( speed_top );
 	if (++logCount >= 20) {
 	    Log();
 	    logCount = 0;
@@ -264,15 +268,14 @@ void Shooter::Run()
     case kIdle:
 	break;
     case kShooting:
-	if (shot_timer.HasPeriodPassed(shot_time)) {
+	if (shot_timer.Get() > shot_time) {
 	    injector.Set(false);
+	    shot_timer.Reset();
 	    shooting = kResetting;
 	}
 	break;
     case kResetting:
-	if (shot_timer.HasPeriodPassed(release_time)) {
-	    shot_timer.Stop();
-	    shot_timer.Reset();
+	if (shot_timer.Get() > release_time) {
 	    shooting = kIdle;
 	}
 	break;
@@ -291,6 +294,8 @@ bool Shooter::IsShooting()
 
 bool Shooter::IsReady()
 {
-    return (IsRunning() && !IsShooting() && pid_bottom.OnTarget() && pid_top.OnTarget());
+    return (IsRunning() && !IsShooting() &&
+    	    (motor_timer.Get() > MOTOR_START) &&
+	    pid_bottom.OnTarget() && pid_top.OnTarget());
 }
 

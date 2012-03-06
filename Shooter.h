@@ -28,6 +28,7 @@ private:
     // motor speed controllers
     xPIDController pid_bottom, pid_top;
 
+    Timer motor_timer;
     Timer shot_timer;
 
     // runtime state

@@ -178,15 +178,15 @@ Target::TargetLocation Target::GetTargetLocation( TargetID which )
 // two cameras are very different, even though they supposedly use the
 // same size sensor and only slightly different lenses.
 //
-// For now, assume horizontal angle = 49 degrees and WIDTH = 640 pixels
-// tan(h/2) = tan(24.5 degrees) = 0.45572626
-// (WIDTH/2) / tan(h/2) = 702.17591
+// For now, assume horizontal angle = 47 degrees and WIDTH = 640 pixels
+// tan(h/2) = tan(24.5 degrees) = 0.434812375;
+// (WIDTH/2) / tan(h/2) = 735.94962
 
 #define	WIDTH	640	// image width, in pixels
 #define	HEIGHT	480	// image height, in pixels
 #define	BORDER	4	// expected minimum spacing from objects to edge of image
 
-#define	IMAGE_PLANE 702.17591
+#define	IMAGE_PLANE 735.94962
 
 // FRC target dimensions:
 //
@@ -280,7 +280,9 @@ void Target::Run()
 		    m_targetRight.valid = false;
 		}
 	    }
-	    SaveImages();
+	    if (DriverStation::GetInstance()->GetEnhancedIO().GetDigital(3)) {
+		SaveImages();
+	    }
 	}
 	// no thrashing!
 	Wait(0.10);
@@ -407,7 +409,7 @@ bool Target::FindParticles()
 
     // extract the blue plane
     if (!imaqExtractColorPlanes(m_cameraImage.GetImaqImage(), IMAQ_RGB,
-    		m_monoImage.GetImaqImage(), NULL, NULL))
+    		NULL, NULL, m_monoImage.GetImaqImage()))
     {
 	printf("%s: imaqExtractColorPlanes FAILED\n", __FUNCTION__);
 	return false;
@@ -416,7 +418,7 @@ bool Target::FindParticles()
     // select interesting particles
 #if 1
     if (!imaqThreshold(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
-    	/*rangeMin*/ 175, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
+    	/*rangeMin*/ 240, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
     {
 	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
 	return false;
