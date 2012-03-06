@@ -96,8 +96,10 @@ private:
     double m_bottomAngle;
     double m_centerAngle;
     double m_centerDistance;
+    double m_leftX;
     double m_leftAngle;
     double m_leftDistance;
+    double m_rightX;
     double m_rightAngle;
     double m_rightDistance;
  

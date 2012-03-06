@@ -17,7 +17,7 @@ Target::Target() :
     m_task( "TargetProcess", (FUNCPTR)TargetProcess )
 {
     memset(m_falseColor, 0, sizeof(m_falseColor));
-    for (int i = 1; i < 255; i++) {
+    for (int i = 1; i <= 255; i++) {
 	switch ((i-1) % 6) {
 	case 0:	// white
 	    m_falseColor[i].R = m_falseColor[i].G = m_falseColor[i].B = 255;
@@ -242,6 +242,7 @@ void Target::Run()
     while (1) {
 	if (m_newImage && GetImage()) {
 	    m_pTop = m_pBottom = m_pLeft = m_pRight = NULL;
+	    m_leftX = m_rightX = -1;
 	    bool result = FindParticles() && AnalyzeParticles();
 	    {
 		Synchronized mutex(m_sem);
@@ -322,7 +323,8 @@ static void OverlayParticle( RGBImage *image, Target::Particle *p )
 	points[2].y = (int)(p->bottomBound + 0.5);
 	points[3].x = (int)(p->rightBound + 0.5);
 	points[3].y = (int)(p->topBound + 0.5);
-	imaqOverlayClosedContour(image->GetImaqImage(), points, 4, &IMAQ_RGB_RED, IMAQ_DRAW_VALUE, NULL);
+	imaqOverlayClosedContour(image->GetImaqImage(), points, 4,
+			       &IMAQ_RGB_RED, IMAQ_DRAW_VALUE, NULL);
 
 	points[0].x = (int)(p->xCenter + 0.5) - 10;
 	points[0].y = (int)(p->yCenter + 0.5) - 10;
@@ -332,8 +334,8 @@ static void OverlayParticle( RGBImage *image, Target::Particle *p )
 	points[2].y = (int)(p->yCenter + 0.5) + 10;
 	points[3].x = (int)(p->xCenter + 0.5) + 10;
 	points[3].y = (int)(p->yCenter + 0.5) - 10;
-	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_GREEN, NULL);
-	imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_GREEN, NULL);
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+	imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_BLUE, NULL);
     }
 }
 
@@ -350,8 +352,34 @@ static void OverlayCenter( RGBImage *image, double x, double y )
     points[3].x = (int)(x + 0.5) + 10;
     points[3].y = (int)(y + 0.5) - 10;
 
-    imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_GREEN, NULL);
-    imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_GREEN, NULL);
+    imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+    imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_BLUE, NULL);
+}
+
+static void OverlayLimits( RGBImage *image, double leftX, double centerX, double rightX )
+{
+    Point points[2];
+
+    if (leftX >= 0) {
+	points[0].x = points[1].x = (int)(leftX + 0.5);
+	points[0].y = 0;
+	points[1].y = (HEIGHT - 1);
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+    }
+
+    if (centerX >= 0) {
+	points[0].x = points[1].x = (int)(centerX + 0.5);
+	points[0].y = 0;
+	points[1].y = (HEIGHT - 1);
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+    }
+
+    if (rightX >= 0) {
+	points[0].x = points[1].x = (int)(rightX + 0.5);
+	points[0].y = 0;
+	points[1].y = (HEIGHT - 1);
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+    }
 }
 
 void Target::SaveImages()
@@ -389,6 +417,8 @@ void Target::SaveImages()
     OverlayParticle(&m_overlay, m_pRight);
 
     OverlayCenter(&m_overlay, m_centerX, m_centerY);
+
+    OverlayLimits(&m_overlay, m_leftX, m_centerX, m_rightX);
 
     imaqMergeOverlay(m_overlay.GetImaqImage(), m_overlay.GetImaqImage(), NULL, 0, NULL);
 
@@ -749,20 +779,25 @@ bool Target::AnalyzeParticles()
 
     double leftWidthReal;
     double leftWidthImage;
+
     if (m_pLeft) {
 	if (m_leftClipped) {
+	    m_leftX = m_pLeft->rightBound;
+	    leftWidthImage = m_centerX - m_leftX;
 	    leftWidthReal = FRC_INSIDE;
-	    leftWidthImage = m_centerX - m_pLeft->rightBound;
 	} else {
+	    m_leftX = m_pLeft->leftBound;
+	    leftWidthImage = m_centerX - m_leftX;
 	    leftWidthReal = FRC_OUTSIDE;
-	    leftWidthImage = m_centerX - m_pLeft->leftBound;
 	}
     } else if (m_pTop) {
+	m_leftX = m_pTop->leftBound;
+	leftWidthImage = m_centerX - m_leftX;
 	leftWidthReal = FRC_WIDTH;
-	leftWidthImage = m_centerX - m_pTop->leftBound;
     } else if (m_pBottom) {
+	m_leftX = m_pBottom->leftBound;
+	leftWidthImage = m_centerX - m_leftX;
 	leftWidthReal = FRC_WIDTH;
-	leftWidthImage = m_centerX - m_pBottom->leftBound;
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
 	return false;
@@ -777,18 +812,22 @@ bool Target::AnalyzeParticles()
 
     if (m_pRight) {
 	if (m_rightClipped) {
+	    m_rightX = m_pRight->leftBound;
+	    rightWidthImage = m_rightX - m_centerX;
 	    rightWidthReal = FRC_INSIDE;
-	    rightWidthImage = m_pRight->leftBound - m_centerX;
 	} else {
+	    m_rightX = m_pRight->rightBound;
+	    rightWidthImage = m_rightX - m_centerX;
 	    rightWidthReal = FRC_OUTSIDE;
-	    rightWidthImage = m_pRight->rightBound - m_centerX;
 	}
     } else if (m_pTop) {
+	m_rightX = m_pTop->rightBound;
+	rightWidthImage = m_rightX - m_centerX;
 	rightWidthReal = FRC_WIDTH;
-	rightWidthImage = m_pTop->rightBound - m_centerX;
     } else if (m_pBottom) {
+	m_rightX = m_pBottom->rightBound;
 	rightWidthReal = FRC_WIDTH;
-	rightWidthImage = m_pBottom->rightBound - m_centerX;
+	rightWidthImage = m_rightX - m_centerX;
     } else {
 	printf("ERROR: m_pTop and m_pBottom are both NULL (can't happen!)\n");
 	return false;
