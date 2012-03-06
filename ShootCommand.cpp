@@ -31,7 +31,7 @@ void ShootCommand::Start()
     m_robot.illuminator.Set( Relay::kOn );
     turnTimer.Reset();
     fireControl = kLights;
-    MyRobot::ShowState("Teleop", "Lights");
+    MyRobot::ShowState("Shoot", "Lights");
 }
 
 void ShootCommand::Stop()
@@ -113,11 +113,11 @@ bool ShootCommand::Run()
 		m_robot.EnablePositionControl();
 		turnTimer.Reset();
 		fireControl = kAction;
-		MyRobot::ShowState("Teleop", "Turning");
+		MyRobot::ShowState("Shoot", "Turning");
 	    } else {
 		printf("No targets visible\n");
 		fireControl = kNoTarget;
-		MyRobot::ShowState("Teleop", "No Targets");
+		MyRobot::ShowState("Shoot", "No Targets");
 	    }
 	}
 	break;
@@ -143,7 +143,7 @@ bool ShootCommand::Run()
 		    // If we're aimed at the center of the target array, just stop here.
 		    printf("Aiming complete, distance = %g\n", targetLocation.distance);
 		    fireControl = kNoTarget;
-		    MyRobot::ShowState("Teleop", "Aimed At Center");
+		    MyRobot::ShowState("Shoot", "Aimed At Center");
 		} else {
 		    // Start the shooter.
 		    // TBD: change adjustment scaling?
@@ -152,7 +152,7 @@ bool ShootCommand::Run()
 					      (oi.Adjust()-0.5)*2.);
 		    m_robot.shooter.Start();
 		    fireControl = kShooting;
-		    MyRobot::ShowState("Teleop", "Shooting");
+		    MyRobot::ShowState("Shoot", "Shooting");
 		}
 	    } else {
 		printf("Taking another picture...\n");
@@ -160,7 +160,7 @@ bool ShootCommand::Run()
 		// Take another picture and reposition.
 		m_robot.target.StartAcquisition();
 		fireControl = kCamera;
-		MyRobot::ShowState("Teleop", "Looking (again)");
+		MyRobot::ShowState("Shoot", "Looking (again)");
 	    }
 	}
 	break;

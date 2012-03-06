@@ -29,19 +29,14 @@ MyRobot::MyRobot() :
     m_balance( drive, pitch ),
     driveMode(kManual)
 {
-    printf("File Versions:\n%s\n", Version::GetVersions());
-}
-
-void MyRobot::RobotInit()
-{
-    m_balance.InitBalance();
-    shooter.InitShooter();
     Safe();
 
     // We don't care about the camera right now, just that it's instantiated.
     (void) AxisCamera::GetInstance();
 
-    ShowState("Initialize","Idle");
+    printf("File Versions:\n%s\n", Version::GetVersions());
+
+    ShowState("Initialized","Idle");
 }
 
 void MyRobot::StopTheWorld()

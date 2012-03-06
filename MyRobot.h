@@ -106,8 +106,6 @@ private:
 public:
     MyRobot();
 
-    void RobotInit();
-
     OI& GetOI() { return m_oi; };
 
     void StopTheWorld();

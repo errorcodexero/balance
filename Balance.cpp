@@ -77,6 +77,12 @@ Balance::Balance( RobotDrive& driveTrain, Gyro& pitchGyro ) :
     Preferences *pref = Preferences::GetInstance();
     bool saveNeeded = false;
     
+    // set the gyro sensitivity so results will be in degrees
+    gyro.SetSensitivity( SENSITIVITY );
+
+    // reset the gyro to "level"
+    gyro.Reset();
+
     printf("In Balance constructor, pref = 0x%p\n", pref);
     if (!pref->ContainsKey( "Balance.approach_speed" )) {
 	pref->PutDouble( "Balance.approach_speed", APPROACH_SPEED );
@@ -123,12 +129,6 @@ Balance::Balance( RobotDrive& driveTrain, Gyro& pitchGyro ) :
     InitBalance();
 }
 
-Balance::~Balance()
-{
-    drive.Drive( 0.0F, 0.0F );
-}
-
-
 void Balance::InitBalance()
 {
     Preferences *pref = Preferences::GetInstance();
@@ -154,12 +154,6 @@ void Balance::InitBalance()
     printf("InitBalance: ramp_time = %lu\n", (unsigned long) ramp_time / 1000UL);
     printf("InitBalance: brake_time = %lu\n", (unsigned long) brake_time / 1000UL);
 
-    // set the gyro sensitivity so results will be in degrees
-    gyro.SetSensitivity( SENSITIVITY );
-
-    // reset the gyro to "level"
-    gyro.Reset();
-
     speed = 0.0F;
     SmartDashboard::Log( speed, "Balance.speed" );
 
@@ -167,9 +161,13 @@ void Balance::InitBalance()
     SmartDashboard::Log( tilt, "Balance.tilt" );
 
     state = kInitialized;
-//  MyRobot::ShowState("Initialize","Balance Init");
 
     running = false;
+}
+
+Balance::~Balance()
+{
+    drive.Drive( 0.0F, 0.0F );
 }
 
 void Balance::Start( bool startReverse, bool startOnRamp )
@@ -180,12 +178,12 @@ void Balance::Start( bool startReverse, bool startOnRamp )
     // set the initial speed and position
     if (startOnRamp) {
 	state = kOnRamp;
-	MyRobot::ShowState("Teleop", "Balance On Ramp");
+	MyRobot::ShowState("Balance", "On Ramp");
 	speed = ramp_speed;
 	SmartDashboard::Log( speed,  "Balance.speed" );
     } else {
 	state = kApproach;
-	MyRobot::ShowState("Teleop", "Balance Approach");
+	MyRobot::ShowState("Balance", "Approach");
 	speed = approach_speed;
 	SmartDashboard::Log( speed,  "Balance.speed" );
     }
@@ -218,7 +216,7 @@ bool Balance::Run()
 	    printf("kApproach: tilt %4.2f\n", tilt);
 	    if (tilt > tilt_up) {
 		state = kOnRamp;
-		MyRobot::ShowState("Teleop", "Balance On Ramp");
+		MyRobot::ShowState("Balance", "On Ramp");
 		speed = ramp_speed;
 		when = (long)(GetFPGATime() + ramp_time);
 	    }
@@ -229,7 +227,7 @@ bool Balance::Run()
 	    printf("kOnRamp: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if ((timeleft <= 0) && (tilt < tilt_down)) {
 		state = kBraking;
-		MyRobot::ShowState("Teleop", "Balance Braking");
+		MyRobot::ShowState("Balance", "Braking");
 		speed = brake_speed;
 		when = (long)(GetFPGATime() + brake_time);
 	    }
@@ -240,7 +238,7 @@ bool Balance::Run()
 	    printf("kBraking: tilt %4.2f time %ld\n", tilt, timeleft);
 	    if (timeleft <= 0) {
 		state = kBalanced; // or so we hope
-		MyRobot::ShowState("Teleop", "Balance Balanced");
+		MyRobot::ShowState("Balance", "Balanced");
 		printf("kBalanced\n");
 		speed = 0.0F;
 	    }

@@ -21,7 +21,7 @@ void TurnCommand::Start()
     turnComplete = false;
 
     // printf("Start turn\n");
-    MyRobot::ShowState("Teleop", "Manual Turn");
+    MyRobot::ShowState("Turn", "Start");
 }
 
 void TurnCommand::Stop()
@@ -55,7 +55,7 @@ bool TurnCommand::Run()
 	    //   m_robot.GetJaguarAngle(m_robot.motor_right_2,"right_2"));
 	    m_robot.DisableMotors();
 	    turnComplete = true;  // even if it's not true
-	    MyRobot::ShowState("Teleop", "Turn Complete");
+	    MyRobot::ShowState("Turn", "Complete");
 	}
     }
 

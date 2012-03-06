@@ -18,8 +18,6 @@ DriveCommand::DriveCommand( MyRobot& theRobot ) : m_robot(theRobot)
     controlChooser.AddDefault("Voltage", (void *) kVoltage);
     controlChooser.AddObject("Speed",    (void *) kSpeed);
     SmartDashboard::GetInstance()->PutData("Control", &controlChooser);
-
-//  MyRobot::ShowState("Initialize", "Manual Drive");
 }
 
 void DriveCommand::Start()
@@ -32,7 +30,7 @@ void DriveCommand::Start()
     else
 	m_robot.EnableVoltageControl();
 
-    MyRobot::ShowState("Teleop", "Drive");
+    MyRobot::ShowState("Drive", "Start");
 }
 
 void DriveCommand::Stop()
