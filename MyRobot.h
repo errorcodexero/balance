@@ -14,6 +14,7 @@
 #include "Shooter.h"
 #include "Target.h"
 #include "OI.h"
+#include "AutoCommand.h"
 #include "DriveCommand.h"
 #include "TurnCommand.h"
 #include "ShootCommand.h"
@@ -23,6 +24,7 @@ class MyRobot : public IterativeRobot
     friend class DriveCommand;
     friend class TurnCommand;
     friend class ShootCommand;
+    friend class AutoCommand;
 
 private:
     // shaft encoder counts per inch of robot movement
@@ -59,6 +61,8 @@ private:
 
     // Shooter components are encapsulated in Shooter class
 
+    // Autonomous mode selector is encapsulated in AutoCommand class
+
     // Camera illuminator on/off
     Relay illuminator;
 
@@ -82,6 +86,7 @@ private:
     // commands
     ///////////////////////////////////////////////////////////////////
 
+    AutoCommand  m_autoCommand;
     DriveCommand m_driveCommand;
     TurnCommand  m_turnCommand;
     ShootCommand m_shootCommand;

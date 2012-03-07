@@ -23,6 +23,7 @@ MyRobot::MyRobot() :
     pickup( ball_pickup ),
     shooter( 1, 2, 3, 4, 2 ),
     target(),
+    m_autoCommand(*this),
     m_driveCommand(*this),
     m_turnCommand(*this),
     m_shootCommand(*this),
@@ -264,10 +265,10 @@ double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
 
 bool MyRobot::DriveToPosition( float distance, float tolerance )
 {
-    float l1 = GetJaguarDistance(motor_left_1,"left_1");
-    float l2 = GetJaguarDistance(motor_left_2,"left_2");
-    float r1 = - GetJaguarDistance(motor_right_1,"right_1");
-    float r2 = - GetJaguarDistance(motor_right_2,"right_2");
+    float l1 = -GetJaguarDistance(motor_left_1,"left_1");
+    float l2 = -GetJaguarDistance(motor_left_2,"left_2");
+    float r1 = GetJaguarDistance(motor_right_1,"right_1");
+    float r2 = GetJaguarDistance(motor_right_2,"right_2");
 
     if (fabs(l1 - distance) < tolerance &&
 	fabs(l2 - distance) < tolerance &&
@@ -280,10 +281,10 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     {
 	float pos = distance * driveScale;
 	// printf("distance %g l1 %g l2 %g r1 %g r2 %g\n", distance, l1, l2, r1, r2);
-	motor_left_1.Set(pos, 1);
-	motor_left_2.Set(pos, 1);
-	motor_right_1.Set(-pos, 1);
-	motor_right_2.Set(-pos, 1);
+	motor_left_1.Set(-pos, 1);
+	motor_left_2.Set(-pos, 1);
+	motor_right_1.Set(pos, 1);
+	motor_right_2.Set(pos, 1);
 	xCANJaguar::UpdateSyncGroup(1);
 	return false;
     }

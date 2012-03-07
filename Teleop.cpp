@@ -10,6 +10,9 @@ void MyRobot::TeleopInit()
 {
     Safe();
     compressor.Start();
+    m_turnCommand.Stop();
+    m_shootCommand.Stop();
+    m_autoCommand.Stop();
     m_balance.InitBalance();
     shooter.InitShooter();
 

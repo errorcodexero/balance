@@ -9,6 +9,10 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::DisabledInit()
 {
     Safe();
+    m_driveCommand.Stop();
+    m_turnCommand.Stop();
+    m_shootCommand.Stop();
+    m_autoCommand.Stop();
     ShowState("Disabled", "Safe");
 }
 
