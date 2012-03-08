@@ -13,6 +13,7 @@ void MyRobot::DisabledInit()
     m_turnCommand.Stop();
     m_shootCommand.Stop();
     m_autoCommand.Stop();
+    compressor.Start();
     ShowState("Disabled", "Safe");
 }
 

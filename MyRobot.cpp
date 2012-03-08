@@ -30,13 +30,15 @@ MyRobot::MyRobot() :
     m_balance( drive, pitch ),
     driveMode(kManual)
 {
-    Safe();
+    printf("File Versions:\n%s\n", Version::GetVersions());
+    RobotInit();
+}
 
+void MyRobot::RobotInit()
+{
+    Safe();
     // We don't care about the camera right now, just that it's instantiated.
     (void) AxisCamera::GetInstance();
-
-    printf("File Versions:\n%s\n", Version::GetVersions());
-
     ShowState("Initialized","Idle");
 }
 
@@ -226,7 +228,7 @@ void MyRobot::EnablePositionControl()
 // driveScale = (1.0 inch / wheel circumference) * (wheel gear teeth / drive gear teeth);
 //            = (  1.0    /      (8.0 * PI)    ) * (      36         /       17        );
 //
-const double MyRobot::driveScale = 0.08426;
+const double MyRobot::driveScale = 0.08426 / 1.50;	// measured adjustment to calculation
 
 // shaft encoder counts per degree of robot rotation (when turning in place)
 // turnScale = (turn circumference / wheel circumference)

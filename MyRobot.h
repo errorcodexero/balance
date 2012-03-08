@@ -124,18 +124,19 @@ public:
 
     static void ShowState( char *mode, char *state );
 
-    void DisabledInit();
-    void AutonomousInit();
-    void TeleopInit();
+    virtual void RobotInit();
 
-    void DisabledPeriodic();
-    void AutonomousPeriodic();
-    void TeleopPeriodic();
+    virtual void DisabledInit();
+    virtual void AutonomousInit();
+    virtual void TeleopInit();
 
-    void DisabledContinuous();
-    void AutonomousContinuous();
-    void TeleopContinuous();
+    virtual void DisabledPeriodic();
+    virtual void AutonomousPeriodic();
+    virtual void TeleopPeriodic();
 
+    virtual void DisabledContinuous();
+    virtual void AutonomousContinuous();
+    virtual void TeleopContinuous();
 };
 
 #endif // _MYROBOT_H_

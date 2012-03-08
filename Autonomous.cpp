@@ -10,6 +10,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 void MyRobot::AutonomousInit()
 {
     Safe();
+    compressor.Start();
     ShowState("Autonomous","");
     m_autoCommand.Start();
 }

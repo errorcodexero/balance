@@ -8,7 +8,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float AutoCommand::shotTimeLimit = 6.0;
+const float AutoCommand::shotTimeLimit = 4.0;
 const float AutoCommand::turnTimeLimit = 2.0;
 const float AutoCommand::driveTimeLimit = 4.0;
 const float AutoCommand::turnTolerance = 0.5;
@@ -70,7 +70,9 @@ void AutoCommand::Start()
 
     case 7: // left side, right bridge
 	shotDistance = 115.5;
-	turnAngle = -(21.4 + 55.5);
+	// either 55.5 is wrong or large turns need recalibration
+	// turnAngle = -(21.4 + 55.5);
+	turnAngle = -56.;
 	driveDistance = 241.;
 	break;
 
@@ -93,12 +95,13 @@ void AutoCommand::Start()
     }
 
     m_robot.DisableMotors();
+    m_robot.shooter.InitShooter();
     printf("Starting shooter, distance = %g\n", shotDistance);
     m_robot.shooter.SetTarget(2, shotDistance, 0.);
     m_robot.shooter.Start();
     MyRobot::ShowState("Autonomous", "Shoot");
-    autoState = kShooting;
     shotCount = 0;
+    autoState = kShooting;
     autoTimer.Reset();
 }
 
@@ -111,6 +114,8 @@ void AutoCommand::Stop()
 
 bool AutoCommand::Run()
 {
+    m_robot.shooter.Run();
+
     switch (autoState) {
 	case kShooting: {
 	    bool shooterReady = m_robot.shooter.IsReady();
@@ -119,15 +124,23 @@ bool AutoCommand::Run()
 		break;	// just wait
 
 	    if (shooterReady) {
-		m_robot.shooter.Shoot();
-		if (++shotCount < 2)
+		printf("Shoot!\n");
+		if (++shotCount <= 2) {
+		    m_robot.shooter.Shoot();
+		    printf("waiting for next shot...\n");
+		    autoTimer.Reset();
 		    break;  // stay in this state
+		}
+		printf("Done shooting\n");
+	    } else {
+		printf("Shooter TIMEOUT\n");
 	    }
 
 	    m_robot.shooter.Stop();
 	    if (autoSequence < 4) {
 		autoState = kStopped;
 	    } else {
+		printf("Preparing to move...\n");
 		m_robot.EnablePositionControl();
 		autoState = kTurning;
 		autoTimer.Reset();

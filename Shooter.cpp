@@ -212,8 +212,9 @@ void Shooter::Start()
     pid_top.Enable();
 
     motor_timer.Reset();
-
     running = true;
+
+    Run();
     Log();
 }
 
