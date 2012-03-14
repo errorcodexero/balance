@@ -20,13 +20,13 @@ void TurnCommand::Start()
     turnTimer.Reset();
     turnComplete = false;
 
-    // printf("Start turn\n");
+    printf("Start turn\n");
     MyRobot::ShowState("Turn", "Start");
 }
 
 void TurnCommand::Stop()
 {
-    // printf("Stop turn\n");
+    printf("Stop turn\n");
     m_robot.DisableMotors();
 }
 

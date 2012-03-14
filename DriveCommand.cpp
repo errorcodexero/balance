@@ -2,6 +2,7 @@
 // Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
+#include <math.h>
 #include "DriveCommand.h"
 #include "MyRobot.h"
 #include "Version.h"
@@ -51,16 +52,16 @@ bool DriveCommand::Run()
 
     switch (driveMode) {
     case kFlightStick:
-	m_robot.drive.ArcadeDrive( rightY, -rightT, false );
+	m_robot.drive.ArcadeDrive( rightY, -rightT / 2.0, false );
 	break;
     case kArcade:
-	m_robot.drive.ArcadeDrive( rightY, -rightX, false );
+	m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
 	break;
     case kXY:
 	if (rightY > 0.10) {
-	    m_robot.drive.ArcadeDrive( rightY, rightX, false );
+	    m_robot.drive.ArcadeDrive( rightY, rightX / 2.0, false );
 	} else {
-	    m_robot.drive.ArcadeDrive( rightY, -rightX, false );
+	    m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
 	}
 	break;
     case kTwoStick:
@@ -122,7 +123,7 @@ bool DriveCommand::Run()
 	break;
     }
     if (m_robot.shooter.IsRunning()) {
-	float speed = 0.450 + (oi.Adjust() * 0.500);
+	float speed = 0.300 + (oi.Adjust() * 0.650);
 	m_robot.shooter.SetSpeed(speed);
 
 	// This will repeat fire if the button is held down.

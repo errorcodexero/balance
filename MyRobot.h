@@ -94,6 +94,7 @@ private:
 
     typedef enum { kManual, kTurn, kShoot, kBalance } DriveMode;
     DriveMode driveMode;
+    long driveTime;	// in milliseconds
 
     ///////////////////////////////////////////////////////////////////
     // helper functions

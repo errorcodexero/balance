@@ -7,28 +7,66 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+// CAN bus
+#define	MOTOR_LEFT_2	5
+#define	MOTOR_RIGHT_1	6
+#define	MOTOR_LEFT_1	7
+#define	MOTOR_RIGHT_2	8
+
+// analog inputs
+#define	PITCH_ANAIN	1
+#define	YAW_ANAIN	2
+
+// digital inputs
+#define PRESSURE_DIGIN	1
+#define	BALL_RDY_DIGIN	2	// ball-in-place sensor, not used
+#define	SHOOT_BOT_DIGIN	3
+#define	SHOOT_TOP_DIGIN	4
+#define	ENCODER_LEFT_A	5	// shaft encoder inputs, not used
+#define	ENCODER_LEFT_B	6	// shaft encoder inputs, not used
+#define	ENCODER_RIGHT_A	7	// shaft encoder inputs, not used
+#define	ENCODER_RIGHT_B	8	// shaft encoder inputs, not used
+
+// PWM outputs
+#define	SHOOT_BOT_PWM	1
+#define	SHOOT_TOP_PWM	2
+
+// relay (Spike) outputs
+#define	COMPRESSOR_RLY	1
+#define	PICKUP_RLY	2
+#define	ILLUMINATOR_RLY	3
+
+// solenoid (pneumatic) outputs
+#define	COWCATCHER_SOL	1
+#define	INJECTOR_SOL	2
+
+// shaft encoder counts
+#define	ENCODER_COUNT	250	// or 300 or 360
+
+
 MyRobot::MyRobot() :
     m_oi(),
-    motor_right_1( 6 ),
-    motor_right_2( 8 ),
-    motor_left_1(  7 ),
-    motor_left_2(  5 ),
-    pitch( 1 ),
-    yaw( 2 ),
-    compressor( 1, 1 ),
-    cowcatcher( 1 ),
-    ball_pickup( 2, Relay::kBothDirections ),
-    illuminator( 3, Relay::kForwardOnly ),
+    motor_right_1( MOTOR_RIGHT_1 ),
+    motor_right_2( MOTOR_RIGHT_2 ),
+    motor_left_1(  MOTOR_LEFT_1 ),
+    motor_left_2(  MOTOR_LEFT_2 ),
+    pitch( PITCH_ANAIN ),
+    yaw( YAW_ANAIN ),
+    compressor( COMPRESSOR_RLY, PRESSURE_DIGIN ),
+    cowcatcher( COWCATCHER_SOL ),
+    ball_pickup( PICKUP_RLY, Relay::kBothDirections ),
+    illuminator( ILLUMINATOR_RLY, Relay::kForwardOnly ),
     drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
     pickup( ball_pickup ),
-    shooter( 1, 2, 3, 4, 2 ),
+    shooter( SHOOT_BOT_PWM, SHOOT_TOP_PWM, SHOOT_BOT_DIGIN, SHOOT_TOP_DIGIN, INJECTOR_SOL ),
     target(),
     m_autoCommand(*this),
     m_driveCommand(*this),
     m_turnCommand(*this),
     m_shootCommand(*this),
     m_balance( drive, pitch ),
-    driveMode(kManual)
+    driveMode(kManual),
+    driveTime(0)
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
     RobotInit();
@@ -92,6 +130,7 @@ void MyRobot::DisableMotors()
 void MyRobot::EnableVoltageControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kPercentVbus );
+    motor.ConfigMaxOutputVoltage( 13. );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
 
     // force change in control mode
@@ -139,9 +178,10 @@ void MyRobot::EnableVoltageControl()
 void MyRobot::EnableSpeedControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kSpeed );
+    motor.ConfigMaxOutputVoltage( 13. );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
     motor.SetSpeedReference( xCANJaguar::kSpeedRef_QuadEncoder );
-    motor.ConfigEncoderCodesPerRev( 360 );  // or 250, or 300?
+    motor.ConfigEncoderCodesPerRev( ENCODER_COUNT );
     motor.SetPID( 0.300, 0.003, 0.001 );
 
     // force change in control mode
@@ -189,10 +229,11 @@ void MyRobot::EnableSpeedControl()
 void MyRobot::EnablePositionControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kPosition );
+    motor.ConfigMaxOutputVoltage( 6. );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Brake );
     motor.SetPositionReference( xCANJaguar::kPosRef_QuadEncoder );
-    motor.ConfigEncoderCodesPerRev( 360 );	// or 250, or 300?, adjust for gear ratio?
-    motor.SetPID( 1000.0, 0.0, 10.0 );		// TBD: tune this for position control
+    motor.ConfigEncoderCodesPerRev( ENCODER_COUNT );
+    motor.SetPID( 500.0, 0.1, 40.0 );	// TBD: tune this for position control
 
     // force change in control mode
     motor.EnableControl( 0.0 );
@@ -222,13 +263,17 @@ void MyRobot::EnablePositionControl()
     // Bypass the RobotDrive class for this mode since it doesn't deal
     //   well with arbitrarily large setpoints for multiple wheel rotations.
     drive.SetSafetyEnabled( false );
+
+    // Start the timer
+    driveTime = GetFPGATime();
 }
 
 // shaft encoder counts per inch of robot movement (straight-line movement)
 // driveScale = (1.0 inch / wheel circumference) * (wheel gear teeth / drive gear teeth);
 //            = (  1.0    /      (8.0 * PI)    ) * (      36         /       17        );
 //
-const double MyRobot::driveScale = 0.08426 / 1.50;	// measured adjustment to calculation
+const double MyRobot::driveScale = 0.08426;
+
 
 // shaft encoder counts per degree of robot rotation (when turning in place)
 // turnScale = (turn circumference / wheel circumference)
@@ -272,6 +317,13 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     float r1 = GetJaguarDistance(motor_right_1,"right_1");
     float r2 = GetJaguarDistance(motor_right_2,"right_2");
 
+#if 0
+    {
+	long ms = ((long)GetFPGATime() - driveTime) / 1000;
+	printf("ms %5ld l1 %g l2 %g r1 %g r2 %g\n", ms, l1, l2, r1, r2);
+    }
+#endif
+
     if (fabs(l1 - distance) < tolerance &&
 	fabs(l2 - distance) < tolerance &&
 	fabs(r1 - distance) < tolerance &&
@@ -282,7 +334,6 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     else
     {
 	float pos = distance * driveScale;
-	// printf("distance %g l1 %g l2 %g r1 %g r2 %g\n", distance, l1, l2, r1, r2);
 	motor_left_1.Set(-pos, 1);
 	motor_left_2.Set(-pos, 1);
 	motor_right_1.Set(pos, 1);
@@ -304,6 +355,13 @@ bool MyRobot::TurnToAngle( float angle, float tolerance )
     float r1 = GetJaguarAngle(motor_right_1,"right_1");
     float r2 = GetJaguarAngle(motor_right_2,"right_2");
 
+#if 0
+    {
+	long ms = ((long)GetFPGATime() - driveTime) / 1000;
+	printf("ms %5ld l1 %g l2 %g r1 %g r2 %g\n", ms, l1, l2, r1, r2);
+    }
+#endif
+
     if (fabs(l1 - angle) < tolerance &&
 	fabs(l2 - angle) < tolerance &&
 	fabs(r1 - angle) < tolerance &&
@@ -314,7 +372,6 @@ bool MyRobot::TurnToAngle( float angle, float tolerance )
     else
     {
 	float pos = angle * turnScale;
-	// printf("angle %g l1 %g l2 %g r1 %g r2 %g\n", angle, l1, l2, r1, r2);
 	motor_left_1.Set(pos, 1);
 	motor_left_2.Set(pos, 1);
 	motor_right_1.Set(pos, 1);
