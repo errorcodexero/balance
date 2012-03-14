@@ -44,8 +44,7 @@ private:
     ///////////////////////////////////////////////////////////////////
 
     // motor controllers
-    xCANJaguar motor_right_1, motor_right_2,
-	      motor_left_1, motor_left_2;
+    xCANJaguar motor_right, motor_left;
 
     // Gyro (rate of pitch/yaw) inputs
     Gyro pitch, yaw;

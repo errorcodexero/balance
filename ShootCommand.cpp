@@ -125,12 +125,10 @@ bool ShootCommand::Run()
     case kAction:
 	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle, turnTolerance);
 	if (turnComplete || turnTimer.Get() > 2.0) {
-	    printf("Target turn %s: %g %g %g %g\n",
-	      turnComplete ? "complete" : "TIMEOUT",
-	      m_robot.GetJaguarAngle(m_robot.motor_left_1,"left_1"),
-	      m_robot.GetJaguarAngle(m_robot.motor_left_2,"left_2"),
-	      m_robot.GetJaguarAngle(m_robot.motor_right_1,"right_1"),
-	      m_robot.GetJaguarAngle(m_robot.motor_right_2,"right_2"));
+	    printf("Target turn %s: %g %g %g\n",
+	      turnComplete ? "complete" : "TIMEOUT", targetLocation.angle,
+	      m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
+	      m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
 	    m_robot.DisableMotors();
 
 	    // If the entire target was already visible and we've

@@ -8,10 +8,8 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 // CAN bus
-#define	MOTOR_LEFT_2	5
-#define	MOTOR_RIGHT_1	6
-#define	MOTOR_LEFT_1	7
-#define	MOTOR_RIGHT_2	8
+#define	MOTOR_RIGHT	6
+#define	MOTOR_LEFT	7
 
 // analog inputs
 #define	PITCH_ANAIN	1
@@ -46,17 +44,15 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 MyRobot::MyRobot() :
     m_oi(),
-    motor_right_1( MOTOR_RIGHT_1 ),
-    motor_right_2( MOTOR_RIGHT_2 ),
-    motor_left_1(  MOTOR_LEFT_1 ),
-    motor_left_2(  MOTOR_LEFT_2 ),
+    motor_right( MOTOR_RIGHT ),
+    motor_left( MOTOR_LEFT ),
     pitch( PITCH_ANAIN ),
     yaw( YAW_ANAIN ),
     compressor( COMPRESSOR_RLY, PRESSURE_DIGIN ),
     cowcatcher( COWCATCHER_SOL ),
     ball_pickup( PICKUP_RLY, Relay::kBothDirections ),
     illuminator( ILLUMINATOR_RLY, Relay::kForwardOnly ),
-    drive( motor_left_1, motor_left_2, motor_right_1, motor_right_2 ),
+    drive( motor_left, motor_right ),
     pickup( ball_pickup ),
     shooter( SHOOT_BOT_PWM, SHOOT_TOP_PWM, SHOOT_BOT_DIGIN, SHOOT_TOP_DIGIN, INJECTOR_SOL ),
     target(),
@@ -121,10 +117,8 @@ void MyRobot::DisableMotors()
     drive.StopMotor();
     drive.SetSafetyEnabled( false );	// RobotDrive *should* do this
 
-    DisableMotor( motor_left_1 );	// RobotDrive *should* do this as well
-    DisableMotor( motor_left_2 );
-    DisableMotor( motor_right_1 );
-    DisableMotor( motor_right_2 );
+    DisableMotor( motor_left );	// RobotDrive *should* do this as well
+    DisableMotor( motor_right );
 }
 
 void MyRobot::EnableVoltageControl( xCANJaguar& motor )
@@ -153,10 +147,8 @@ void MyRobot::EnableVoltageControl( xCANJaguar& motor )
 
 void MyRobot::EnableVoltageControl()
 {
-    EnableVoltageControl( motor_left_1 );
-    EnableVoltageControl( motor_right_1 );
-    EnableVoltageControl( motor_left_2 );
-    EnableVoltageControl( motor_right_2 );
+    EnableVoltageControl( motor_left );
+    EnableVoltageControl( motor_right );
 
     drive.SetMaxOutput( 1.0 );	// 100% of Vbus
 
@@ -204,10 +196,8 @@ void MyRobot::EnableSpeedControl( xCANJaguar& motor )
 
 void MyRobot::EnableSpeedControl()
 {
-    EnableSpeedControl( motor_left_1 );
-    EnableSpeedControl( motor_right_1 );
-    EnableSpeedControl( motor_left_2 );
-    EnableSpeedControl( motor_right_2 );
+    EnableSpeedControl( motor_left );
+    EnableSpeedControl( motor_right );
 
     drive.SetMaxOutput( 300 );			// 300 RPM is close to practical top speed
 
@@ -255,10 +245,8 @@ void MyRobot::EnablePositionControl( xCANJaguar& motor )
 
 void MyRobot::EnablePositionControl()
 {
-    EnablePositionControl( motor_left_1 );
-    EnablePositionControl( motor_right_1 );
-    EnablePositionControl( motor_left_2 );
-    EnablePositionControl( motor_right_2 );
+    EnablePositionControl( motor_left );
+    EnablePositionControl( motor_right );
 
     // Bypass the RobotDrive class for this mode since it doesn't deal
     //   well with arbitrarily large setpoints for multiple wheel rotations.
@@ -312,32 +300,26 @@ double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
 
 bool MyRobot::DriveToPosition( float distance, float tolerance )
 {
-    float l1 = -GetJaguarDistance(motor_left_1,"left_1");
-    float l2 = -GetJaguarDistance(motor_left_2,"left_2");
-    float r1 = GetJaguarDistance(motor_right_1,"right_1");
-    float r2 = GetJaguarDistance(motor_right_2,"right_2");
+    float left = -GetJaguarDistance(motor_left,"left");
+    float right = GetJaguarDistance(motor_right,"right");
 
 #if 0
     {
 	long ms = ((long)GetFPGATime() - driveTime) / 1000;
-	printf("ms %5ld l1 %g l2 %g r1 %g r2 %g\n", ms, l1, l2, r1, r2);
+	printf("ms %5ld left %g right %g\n", ms, left, right);
     }
 #endif
 
-    if (fabs(l1 - distance) < tolerance &&
-	fabs(l2 - distance) < tolerance &&
-	fabs(r1 - distance) < tolerance &&
-	fabs(r2 - distance) < tolerance)
+    if (fabs(left - distance) < tolerance &&
+	fabs(right - distance) < tolerance)
     {
 	return true;
     }
     else
     {
 	float pos = distance * driveScale;
-	motor_left_1.Set(-pos, 1);
-	motor_left_2.Set(-pos, 1);
-	motor_right_1.Set(pos, 1);
-	motor_right_2.Set(pos, 1);
+	motor_left.Set(-pos, 1);
+	motor_right.Set(pos, 1);
 	xCANJaguar::UpdateSyncGroup(1);
 	return false;
     }
@@ -350,32 +332,25 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
 
 bool MyRobot::TurnToAngle( float angle, float tolerance )
 {
-    float l1 = GetJaguarAngle(motor_left_1,"left_1");
-    float l2 = GetJaguarAngle(motor_left_2,"left_2");
-    float r1 = GetJaguarAngle(motor_right_1,"right_1");
-    float r2 = GetJaguarAngle(motor_right_2,"right_2");
+    float left = GetJaguarAngle(motor_left,"left");
+    float right = GetJaguarAngle(motor_right,"right");
 
 #if 0
     {
 	long ms = ((long)GetFPGATime() - driveTime) / 1000;
-	printf("ms %5ld l1 %g l2 %g r1 %g r2 %g\n", ms, l1, l2, r1, r2);
+	printf("ms %5ld left %g right %g\n", ms, left, right);
     }
 #endif
 
-    if (fabs(l1 - angle) < tolerance &&
-	fabs(l2 - angle) < tolerance &&
-	fabs(r1 - angle) < tolerance &&
-	fabs(r2 - angle) < tolerance)
+    if (fabs(left - angle) < tolerance && fabs(right - angle) < tolerance)
     {
 	return true;
     }
     else
     {
 	float pos = angle * turnScale;
-	motor_left_1.Set(pos, 1);
-	motor_left_2.Set(pos, 1);
-	motor_right_1.Set(pos, 1);
-	motor_right_2.Set(pos, 1);
+	motor_left.Set(pos, 1);
+	motor_right.Set(pos, 1);
 	xCANJaguar::UpdateSyncGroup(1);
 	return false;
     }
