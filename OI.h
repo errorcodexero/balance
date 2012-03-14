@@ -41,7 +41,7 @@ public:
     bool TurnRight10()		{ return joy_right.GetRawButton(4); }
     bool TurnLeft3()		{ return joy_right.GetRawButton(5); }
     bool TurnRight3()		{ return joy_right.GetRawButton(6); }
-    bool StartBalance()		{ return joy_right.GetRawButton(7); }
+    bool Brake()		{ return joy_right.GetRawButton(7); }
 
     // 3-position switch, ball pickup
     int   BallPickup()		{ return (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5); }

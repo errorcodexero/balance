@@ -124,7 +124,7 @@ void MyRobot::DisableMotors()
 void MyRobot::EnableVoltageControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kPercentVbus );
-    motor.ConfigMaxOutputVoltage( 13. );
+    motor.ConfigMaxOutputVoltage( 13.2 );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
 
     // force change in control mode
@@ -170,8 +170,8 @@ void MyRobot::EnableVoltageControl()
 void MyRobot::EnableSpeedControl( xCANJaguar& motor )
 {
     motor.ChangeControlMode( xCANJaguar::kSpeed );
-    motor.ConfigMaxOutputVoltage( 13. );
-    motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Coast );
+    motor.ConfigMaxOutputVoltage( 13.2 );
+    motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Brake );
     motor.SetSpeedReference( xCANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( ENCODER_COUNT );
     motor.SetPID( 0.300, 0.003, 0.001 );

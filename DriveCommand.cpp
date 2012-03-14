@@ -45,6 +45,15 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
+    ControlMode newMode = oi.Brake() ? kSpeed : (ControlMode) (int) controlChooser.GetSelected();
+    if (controlMode != newMode) {
+	if (newMode == kSpeed)
+	    m_robot.EnableSpeedControl();
+	else
+	    m_robot.EnableVoltageControl();
+	controlMode = newMode;
+    }
+
     float leftY  = oi.GetLeftY();
     float rightY = oi.GetRightY();
     float rightX = oi.GetRightX();
