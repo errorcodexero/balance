@@ -2,6 +2,7 @@
 // Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
+#include <math.h>
 #include "Balance.h"
 #include "MyRobot.h"
 #include "Version.h"
@@ -34,15 +35,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // back and forth in the 6-wheel drive may be a problem!
 
 #define	SENSITIVITY	0.0333	// 33.3mV/degree/s
-
-#define	APPROACH_SPEED	0.50F
-#define	RAMP_SPEED	0.50F
-#define	BRAKE_SPEED	0.0F
-
-#define	TILT_UP		10.0F
-#define	TILT_DOWN	8.0F
-#define	RAMP_TIME	3000	// milliseconds
-#define	BRAKE_TIME	0	// milliseconds
+#define	RAMP_SPEED	0.30F	// drive this fast (as percentage of full speed) on the ramp
+#define	TILT_LIMIT	5.0F	// what we consider "balanced"
+#define	TILT_MAX	15.0F	// 15 degree ramp
 
 // defaults from WPILib AnalogModule class:
 // static const long  kTimebase              = 40000000;  // fixed 40 MHz clock
@@ -57,68 +52,32 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // static const float kCalibrationSampleTime = 5.0;
 // static const float kDefaultVoltsPerDegreePerSecond = 0.007;  // can be changed
 
-Balance::Balance( RobotDrive& driveTrain, Gyro& pitchGyro ) :
-    drive( driveTrain ),
-    gyro( pitchGyro ),
-    approach_speed( APPROACH_SPEED ),
+Balance::Balance( MyRobot& theRobot ) :
+    m_robot( theRobot ),
     ramp_speed( RAMP_SPEED ),
-    brake_speed( BRAKE_SPEED ),
-    tilt_up( TILT_UP ),
-    tilt_down( TILT_DOWN ),
-    ramp_time( RAMP_TIME * 1000UL ),
-    brake_time( BRAKE_TIME * 1000UL ),
+    tilt_limit( TILT_LIMIT ),
     running( false ),
-    state( kInitialized ),
-    reverse( false ),
     speed( 0.0F ),
-    tilt( 0.0F ),
-    when( 0 )
+    tilt( 0.0F )
 {
     Preferences *pref = Preferences::GetInstance();
     bool saveNeeded = false;
     
     // set the gyro sensitivity so results will be in degrees
-    gyro.SetSensitivity( SENSITIVITY );
+    m_robot.pitch.SetSensitivity( SENSITIVITY );
 
     // reset the gyro to "level"
-    gyro.Reset();
+    m_robot.pitch.Reset();
 
     printf("In Balance constructor, pref = 0x%p\n", pref);
-    if (!pref->ContainsKey( "Balance.approach_speed" )) {
-	pref->PutDouble( "Balance.approach_speed", APPROACH_SPEED );
-	printf("Preferences: save APPROACH_SPEED\n");
-	saveNeeded = true;
-    }
     if (!pref->ContainsKey( "Balance.ramp_speed" )) {
 	pref->PutDouble( "Balance.ramp_speed", RAMP_SPEED );
 	printf("Preferences: save RAMP_SPEED\n");
 	saveNeeded = true;
     }
-    if (!pref->ContainsKey( "Balance.brake_speed" )) {
-	pref->PutDouble( "Balance.brake_speed", BRAKE_SPEED );
-	printf("Preferences: save BRAKE_SPEED\n");
-	saveNeeded = true;
-    }
-    if (!pref->ContainsKey( "Balance.tilt_up" )) {
-	pref->PutDouble( "Balance.tilt_up", TILT_UP );
-	printf("Preferences: save TILT_UP\n");
-	saveNeeded = true;
-    }
-    if (!pref->ContainsKey( "Balance.tilt_down" )) {
-	pref->PutDouble( "Balance.tilt_down", TILT_DOWN );
-	printf("Preferences: save TILT_DOWN\n");
-	saveNeeded = true;
-    }
-    if (!pref->ContainsKey( "Balance.ramp_time" )) {
-	// timer in microseconds, preference value in milliseconds
-	pref->PutInt( "Balance.ramp_time", RAMP_TIME );
-	printf("Preferences: save RAMP_TIME\n");
-	saveNeeded = true;
-    }
-    if (!pref->ContainsKey( "Balance.brake_time" )) {
-	// timer in microseconds, preference value in milliseconds
-	pref->PutInt( "Balance.brake_time", BRAKE_TIME );
-	printf("Preferences: save BRAKE_TIME\n");
+    if (!pref->ContainsKey( "Balance.tilt_limit" )) {
+	pref->PutDouble( "Balance.tilt_limit", TILT_LIMIT );
+	printf("Preferences: save TILT_LIMIT\n");
 	saveNeeded = true;
     }
     if (saveNeeded) {
@@ -133,61 +92,32 @@ void Balance::InitBalance()
 {
     Preferences *pref = Preferences::GetInstance();
 
-    approach_speed = pref->GetDouble( "Balance.approach_speed", APPROACH_SPEED );
-    ramp_speed     = pref->GetDouble( "Balance.ramp_speed",     RAMP_SPEED     );
-    brake_speed    = pref->GetDouble( "Balance.brake_speed",    BRAKE_SPEED    );
+    ramp_speed = pref->GetDouble( "Balance.ramp_speed", RAMP_SPEED );
+    printf("InitBalance: ramp_speed = %g\n", ramp_speed);
 
-    printf("InitBalance: approach_speed = %4.2f\n", approach_speed);
-    printf("InitBalance: ramp_speed = %4.2f\n", ramp_speed);
-    printf("InitBalance: brake_speed = %4.2f\n", brake_speed);
-
-    tilt_up        = pref->GetDouble( "Balance.tilt_up",   TILT_UP   );
-    tilt_down      = pref->GetDouble( "Balance.tilt_down", TILT_DOWN );
-
-    printf("InitBalance: tilt_up = %4.2f\n", tilt_up);
-    printf("InitBalance: tilt_down = %4.2f\n", tilt_down);
-
-    // timer in microseconds, preference value in milliseconds
-    ramp_time      = (unsigned long) pref->GetInt( "Balance.ramp_time",   RAMP_TIME ) * 1000UL;
-    brake_time     = (unsigned long) pref->GetInt( "Balance.brake_time", BRAKE_TIME ) * 1000UL;
-
-    printf("InitBalance: ramp_time = %lu\n", (unsigned long) ramp_time / 1000UL);
-    printf("InitBalance: brake_time = %lu\n", (unsigned long) brake_time / 1000UL);
-
-    speed = 0.0F;
-    SmartDashboard::Log( speed, "Balance.speed" );
+    tilt_limit = pref->GetDouble( "Balance.tilt_limit", TILT_LIMIT );
+    printf("InitBalance: tilt_limit = %g\n", tilt_limit);
 
     tilt = 0.0F;
     SmartDashboard::Log( tilt, "Balance.tilt" );
 
-    state = kInitialized;
+    speed = 0.0F;
 
     running = false;
 }
 
 Balance::~Balance()
 {
-    drive.Drive( 0.0F, 0.0F );
+    m_robot.drive.Drive( 0.0F, 0.0F );
 }
 
-void Balance::Start( bool startReverse, bool startOnRamp )
+void Balance::Start()
 {
     // once started, keep running with the original parameters
     if (IsRunning()) return;
 
-    // set the initial speed and position
-    if (startOnRamp) {
-	state = kOnRamp;
-	MyRobot::ShowState("Balance", "On Ramp");
-	speed = ramp_speed;
-	SmartDashboard::Log( speed,  "Balance.speed" );
-    } else {
-	state = kApproach;
-	MyRobot::ShowState("Balance", "Approach");
-	speed = approach_speed;
-	SmartDashboard::Log( speed,  "Balance.speed" );
-    }
-    reverse = startReverse;
+    // enable position control
+    m_robot.EnablePositionControl();
 
     // start moving
     running = true;
@@ -197,54 +127,18 @@ void Balance::Stop()
 {
     running = false;
     speed = 0.0;
-    SmartDashboard::Log( speed,  "Balance.speed" );
-    drive.Drive( 0.0F, 0.0F );
+    m_robot.DisableMotors();
 }
 
 bool Balance::Run()
 {
-    // assume gyro is mounted so a "tilt up" rotation is negative when moving forward
-    tilt = gyro.GetAngle();
-    if (reverse) {
-	tilt = -tilt;
-    }
+    // assume gyro is mounted so a "tilt up" rotation is positive when moving forward
+    tilt = m_robot.pitch.GetAngle();
     SmartDashboard::Log( tilt,  "Balance.tilt" );
 
     if (IsRunning()) {
-	// approaching the ramp
-	if (state == kApproach) {
-	    printf("kApproach: tilt %4.2f\n", tilt);
-	    if (tilt > tilt_up) {
-		state = kOnRamp;
-		MyRobot::ShowState("Balance", "On Ramp");
-		speed = ramp_speed;
-		when = (long)(GetFPGATime() + ramp_time);
-	    }
-	}
-	// climbing the ramp
-	if (state == kOnRamp) {
-	    long timeleft = when - (long) GetFPGATime();
-	    printf("kOnRamp: tilt %4.2f time %ld\n", tilt, timeleft);
-	    if ((timeleft <= 0) && (tilt < tilt_down)) {
-		state = kBraking;
-		MyRobot::ShowState("Balance", "Braking");
-		speed = brake_speed;
-		when = (long)(GetFPGATime() + brake_time);
-	    }
-	}
-	// braking
-	if (state == kBraking) {
-	    long timeleft = when - (long) GetFPGATime();
-	    printf("kBraking: tilt %4.2f time %ld\n", tilt, timeleft);
-	    if (timeleft <= 0) {
-		state = kBalanced; // or so we hope
-		MyRobot::ShowState("Balance", "Balanced");
-		printf("kBalanced\n");
-		speed = 0.0F;
-	    }
-	}
-	// else balanced; nothing to do here
-	drive.Drive( reverse ? speed : -speed, 0.0F );
+	speed = IsBalanced() ? 0.0 : ((tilt / TILT_MAX) * ramp_speed);
+	m_robot.drive.Drive(speed, 0.0F);
     }
 
     return false;	// stay in this state until interrupted by driver
@@ -260,18 +154,8 @@ bool Balance::IsRunning()
     return (running);
 }
 
-bool Balance::IsOnRamp()
-{
-    return (state != kApproach);
-}
-
-bool Balance::IsBraking()
-{
-    return (state == kBraking);
-}
-
 bool Balance::IsBalanced()
 {
-    return (state == kBalanced);
+    return (fabs(tilt) < tilt_limit);
 }
 

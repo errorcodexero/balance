@@ -37,11 +37,12 @@ public:
     bool  GetRightTrigger()	{ return joy_right.GetTrigger(); }
     bool  GetRightTop()		{ return joy_right.GetTrigger(); }
 
+    bool Brake()		{ return joy_right.GetRawButton(2); }
     bool TurnLeft10()		{ return joy_right.GetRawButton(3); }
     bool TurnRight10()		{ return joy_right.GetRawButton(4); }
     bool TurnLeft3()		{ return joy_right.GetRawButton(5); }
     bool TurnRight3()		{ return joy_right.GetRawButton(6); }
-    bool Brake()		{ return joy_right.GetRawButton(7); }
+    bool Balance()		{ return joy_right.GetRawButton(7); }
 
     // 3-position switch, ball pickup
     int   BallPickup()		{ return (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5); }

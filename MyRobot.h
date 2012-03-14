@@ -18,6 +18,7 @@
 #include "DriveCommand.h"
 #include "TurnCommand.h"
 #include "ShootCommand.h"
+#include "Balance.h"
 
 class MyRobot : public IterativeRobot
 {
@@ -25,6 +26,7 @@ class MyRobot : public IterativeRobot
     friend class TurnCommand;
     friend class ShootCommand;
     friend class AutoCommand;
+    friend class Balance;
 
 private:
     // shaft encoder counts per inch of robot movement

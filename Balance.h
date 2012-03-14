@@ -6,43 +6,35 @@
 
 #include <WPILib.h>
 
+class MyRobot;
+
 class Balance
 {
 private:
-    RobotDrive& drive;
-    Gyro& gyro;
+    // pointer to owner
+    MyRobot& m_robot;
 
     // operating parameters configured from preferences/SmartDashboard
-    float approach_speed;
     float ramp_speed;
-    float brake_speed;
-    float tilt_up;
-    float tilt_down;
-    UINT32 ramp_time;
-    UINT32 brake_time;
+    float tilt_limit;
 
     // runtime state
     bool running;		// are we in control?
-    enum { kInitialized, kApproach, kOnRamp, kBraking, kBalanced } state; // operating state
-    bool reverse;		// running in reverse
     float speed;		// current motor speed
     float tilt;			// accumulated angle
-    long when;			// timestamp for braking   
 
 public:
-    Balance( RobotDrive& driveTrain, Gyro& pitchGyro );
+    Balance( MyRobot& theRobot );
     ~Balance();
     
     void InitBalance();
-    void Start( bool reverse = false, bool startOnRamp = false );
+    void Start();
     void Stop();
 
     bool Run();
 
     float GetSpeed();
     bool IsRunning();
-    bool IsOnRamp();
-    bool IsBraking();
     bool IsBalanced();
 };
 

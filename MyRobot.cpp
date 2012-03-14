@@ -60,7 +60,7 @@ MyRobot::MyRobot() :
     m_driveCommand(*this),
     m_turnCommand(*this),
     m_shootCommand(*this),
-    m_balance( drive, pitch ),
+    m_balance(*this),
     driveMode(kManual),
     driveTime(0)
 {
