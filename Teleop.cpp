@@ -25,9 +25,7 @@ void MyRobot::TeleopPeriodic()
     OI& oi = GetOI();
     
     DriveMode newMode;
-    if (oi.Balance()) {
-	newMode = kBalance;
-    } else if (oi.TurnLeft10() || oi.TurnRight10() || oi.TurnLeft3() || oi.TurnRight3()) {
+    if (oi.TurnLeft10() || oi.TurnRight10() || oi.TurnLeft3() || oi.TurnRight3()) {
 	newMode = kTurn;
     } else if (oi.TargetTop() || oi.TargetLeft() || oi.TargetRight() || oi.TargetBottom()) {
 	newMode = kShoot;

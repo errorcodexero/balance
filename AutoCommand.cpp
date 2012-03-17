@@ -53,19 +53,19 @@ void AutoCommand::Start()
     case 4: // left side, center bridge
 	shotDistance = 115.5;
 	turnAngle = -(21.4 + 24.8);
-	driveDistance = 150.;
+	driveDistance = -150.;
 	break;
 
     case 5: // center, center bridge
 	shotDistance = 109.0;
 	turnAngle = 0.0;
-	driveDistance = 136.;
+	driveDistance = -136.;
 	break;
 
     case 6: // right side, center bridge
 	shotDistance = 115.5;
 	turnAngle = 21.4 + 24.8;
-	driveDistance = 150.;
+	driveDistance = -150.;
 	break;
 
     case 7: // left side, right bridge
@@ -73,19 +73,19 @@ void AutoCommand::Start()
 	// either 55.5 is wrong or large turns need recalibration
 	// turnAngle = -(21.4 + 55.5);
 	turnAngle = -56.;
-	driveDistance = 241.;
+	driveDistance = -241.;
 	break;
 
     case 8: // center, right bridge
 	shotDistance = 109.0;
 	turnAngle = -44.9;
-	driveDistance = 193.;
+	driveDistance = -193.;
 	break;
 
     case 9: // right side, right bridge
 	shotDistance = 115.5;
 	turnAngle = 21.4 - 28.2;
-	driveDistance = 155.;
+	driveDistance = -155.;
 	break;
 
     default: // can't happen

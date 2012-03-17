@@ -173,20 +173,19 @@ Target::TargetLocation Target::GetTargetLocation( TargetID which )
 // and camera comparison page:
 // M1011 lens: 4.2mm F2.0
 //
-// These numbers don't make sense!  The stated FOV is much smaller than
-// that calculated from the lens FL and sensor size.  The FOVs for the
-// two cameras are very different, even though they supposedly use the
-// same size sensor and only slightly different lenses.
+// from measurement:
+// horizontal FOV: 48 degrees
 //
-// For now, assume horizontal angle = 47 degrees and WIDTH = 640 pixels
-// tan(h/2) = tan(24.5 degrees) = 0.434812375;
-// (WIDTH/2) / tan(h/2) = 735.94962
+// with horizontal angle = 48 degrees and WIDTH = 640 pixels
+// tan(h/2) = tan(24 degrees) = 0.445228685;
+// (WIDTH/2) / tan(h/2) = 718.73177;
 
 #define	WIDTH	640	// image width, in pixels
 #define	HEIGHT	480	// image height, in pixels
 #define	BORDER	4	// expected minimum spacing from objects to edge of image
+#define	THRESHOLD 200	// image brightness threshold
 
-#define	IMAGE_PLANE 735.94962
+#define	IMAGE_PLANE 718.73177
 
 // FRC target dimensions:
 //
@@ -448,7 +447,7 @@ bool Target::FindParticles()
     // select interesting particles
 #if 1
     if (!imaqThreshold(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
-    	/*rangeMin*/ 240, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
+    	/*rangeMin*/ THRESHOLD, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
     {
 	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
 	return false;

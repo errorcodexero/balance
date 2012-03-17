@@ -147,10 +147,10 @@ void Shooter::Log()
 {
     SmartDashboard::Log(speed_bottom, "b set");
     SmartDashboard::Log(pid_bottom.GetInput(), "b spd");
-    SmartDashboard::Log(pid_bottom.GetError(), "b err");
+    // SmartDashboard::Log(pid_bottom.GetError(), "b err");
     SmartDashboard::Log(speed_top, "t set");
     SmartDashboard::Log(pid_top.GetInput(), "t spd");
-    SmartDashboard::Log(pid_top.GetError(), "t err");
+    // SmartDashboard::Log(pid_top.GetError(), "t err");
     SmartDashboard::Log(IsReady(), "shooter");
 }
 

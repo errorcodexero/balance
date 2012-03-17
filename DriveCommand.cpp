@@ -25,7 +25,7 @@ void DriveCommand::Start()
 {
     driveMode = (DriveType) (int) driveChooser.GetSelected();
 
-    controlMode = (ControlMode) (int) controlChooser.GetSelected();
+    controlMode = selectedMode = (ControlMode) (int) controlChooser.GetSelected();
     if (controlMode == kSpeed)
 	m_robot.EnableSpeedControl();
     else
@@ -45,12 +45,22 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
-    ControlMode newMode = oi.Brake() ? kSpeed : (ControlMode) (int) controlChooser.GetSelected();
-    if (controlMode != newMode) {
-	if (newMode == kSpeed)
+    ControlMode newMode = oi.Brake() ? kPosition : selectedMode;
+    if (newMode != controlMode) {
+	switch (newMode) {
+	case kSpeed:
+	    printf("changing control mode to kSpeed\n");
 	    m_robot.EnableSpeedControl();
-	else
+	    break;
+	case kVoltage:
+	    printf("changing control mode to kVoltage\n");
 	    m_robot.EnableVoltageControl();
+	    break;
+	case kPosition:
+	    printf("changing control mode to kPosition\n");
+	    m_robot.EnablePositionControl();
+	    break;
+	}
 	controlMode = newMode;
     }
 
@@ -59,27 +69,32 @@ bool DriveCommand::Run()
     float rightX = oi.GetRightX();
     float rightT = oi.GetRightTwist();
 
-    switch (driveMode) {
-    case kFlightStick:
-	m_robot.drive.ArcadeDrive( rightY, -rightT / 2.0, false );
-	break;
-    case kArcade:
-	m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
-	break;
-    case kXY:
-	if (rightY > 0.10) {
-	    m_robot.drive.ArcadeDrive( rightY, rightX / 2.0, false );
-	} else {
+    if (controlMode == kPosition) {
+	// single stick, no turns
+	(void) m_robot.DriveToPosition( 44. * rightY, 0. );
+    } else {
+	switch (driveMode) {
+	case kFlightStick:
+	    m_robot.drive.ArcadeDrive( rightY, -rightT / 2.0, false );
+	    break;
+	case kArcade:
 	    m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
+	    break;
+	case kXY:
+	    if (rightY > 0.10) {
+		m_robot.drive.ArcadeDrive( rightY, rightX / 2.0, false );
+	    } else {
+		m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
+	    }
+	    break;
+	case kTwoStick:
+	    m_robot.drive.TankDrive( rightY, leftY );
+	    break;
+	default:
+	    printf("ERROR: Invalid drive mode (can't happen)\n");
+	    m_robot.DisableMotors();
+	    break;
 	}
-	break;
-    case kTwoStick:
-	m_robot.drive.TankDrive( rightY, leftY );
-	break;
-    default:
-	printf("ERROR: Invalid drive mode (can't happen)\n");
-	m_robot.DisableMotors();
-	break;
     }
 
     ////////////////////////////////////////
@@ -123,7 +138,10 @@ bool DriveCommand::Run()
 
     switch (oi.Shooter()) {
     case 2:	// up, start
-	m_robot.shooter.Start();
+	if (!m_robot.shooter.IsRunning()) {
+	    m_robot.target.StartAcquisition();
+	    m_robot.shooter.Start();
+	}
 	break;
     case 1:	// center-off, no change
 	break;
@@ -132,6 +150,24 @@ bool DriveCommand::Run()
 	break;
     }
     if (m_robot.shooter.IsRunning()) {
+	int height = oi.Extra();
+	Target::TargetID id = (height == 2) ? Target::kTop
+			    : (height == 1) ? Target::kLeft
+			    : Target::kBottom;
+
+	if (m_robot.target.ProcessingComplete()) {
+	    bool targetsFound = m_robot.target.TargetsFound();
+	    if (targetsFound) {
+		Target::TargetLocation targetLocation = m_robot.target.GetTargetLocation(id);
+		SmartDashboard::Log(targetLocation.valid,    "target.valid");
+		SmartDashboard::Log(targetLocation.distance, "target.distance");
+		SmartDashboard::Log(targetLocation.angle,    "target.angle");
+	    } else {
+		SmartDashboard::Log(false, "target.valid");
+	    }
+	    m_robot.target.StartAcquisition();
+	}
+
 	float speed = 0.300 + (oi.Adjust() * 0.650);
 	m_robot.shooter.SetSpeed(speed);
 

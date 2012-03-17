@@ -8,8 +8,8 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 // CAN bus
+#define	MOTOR_LEFT	5
 #define	MOTOR_RIGHT	6
-#define	MOTOR_LEFT	7
 
 // analog inputs
 #define	PITCH_ANAIN	1
@@ -300,8 +300,8 @@ double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
 
 bool MyRobot::DriveToPosition( float distance, float tolerance )
 {
-    float left = -GetJaguarDistance(motor_left,"left");
-    float right = GetJaguarDistance(motor_right,"right");
+    float left = GetJaguarDistance(motor_left,"left");
+    float right = -GetJaguarDistance(motor_right,"right");
 
 #if 0
     {
@@ -318,8 +318,8 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     else
     {
 	float pos = distance * driveScale;
-	motor_left.Set(-pos, 1);
-	motor_right.Set(pos, 1);
+	motor_left.Set(pos, 1);
+	motor_right.Set(-pos, 1);
 	xCANJaguar::UpdateSyncGroup(1);
 	return false;
     }

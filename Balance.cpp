@@ -121,6 +121,7 @@ void Balance::Start()
 
     // start moving
     running = true;
+    Run();
 }
 
 void Balance::Stop()

@@ -20,7 +20,8 @@ private:
     DriveType driveMode;
 
     SendableChooser controlChooser;
-    typedef enum { kVoltage, kSpeed } ControlMode;
+    typedef enum { kVoltage, kSpeed, kPosition } ControlMode;
+    ControlMode selectedMode;
     ControlMode controlMode;
 
     // internal state
