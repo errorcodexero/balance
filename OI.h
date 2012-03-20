@@ -53,6 +53,8 @@ public:
     int   Shooter()		{ return (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5); }
     // 3-position switch, unused
     int   Extra()		{ return (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5); }
+    // 3-position switch, tipper
+    int   Tipper()		{ return (int)(pIO->GetAnalogInRatio(6) * 2.0 + 0.5); }
 
     // pushbutton, fire control
     bool  Shoot()		{ return pIO->GetDigital(1); }
@@ -70,6 +72,11 @@ public:
     bool  TargetBottom()	{ return pIO->GetDigital(7); }
     // toggle switch, illuminator
     bool  Illuminator()		{ return pIO->GetDigital(8); }
+
+    // LED, ready-to-shoot
+    void  ReadyLED( bool value )  { pIO->SetDigitalOutput(10, value); }
+    // LED, on-ramp
+    void  OnRampLED( bool value ) { pIO->SetDigitalOutput(9, value); }
 };
 
 #endif // _OI_H_

@@ -132,6 +132,21 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
+    oi.OnRampLED(m_robot.onRamp.Get());
+
+    switch (oi.Tipper()) {
+    case 2:
+	m_robot.tipper.Set( false );
+	break;
+    case 1:
+	break;
+    case 0:
+	m_robot.tipper.Set( true );
+	break;
+    }
+
+    ////////////////////////////////////////
+
     m_robot.illuminator.Set( oi.Illuminator() ? Relay::kOn : Relay::kOff );
 
     ////////////////////////////////////////
@@ -170,11 +185,14 @@ bool DriveCommand::Run()
 
 	float speed = 0.300 + (oi.Adjust() * 0.650);
 	m_robot.shooter.SetSpeed(speed);
+	m_robot.m_oi.ReadyLED(m_robot.shooter.IsReady());
 
 	// This will repeat fire if the button is held down.
 	if (oi.Shoot()) {
 	    m_robot.shooter.Shoot();
 	}
+    } else {
+	m_robot.m_oi.ReadyLED(false);
     }
     m_robot.shooter.Run();
 

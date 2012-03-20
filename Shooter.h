@@ -36,6 +36,9 @@ private:
     bool running;
     enum { kIdle, kShooting, kResetting } shooting;
 
+    // operator control panel
+
+
 public:
     Shooter( int bottom_motor_channel, int top_motor_channel,
     	     int bottom_geartooth_channel, int top_geartooth_channel,

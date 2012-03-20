@@ -67,6 +67,12 @@ private:
     // Camera illuminator on/off
     Relay illuminator;
 
+    // Bridge support ram
+    Solenoid tipper;
+
+    // "on ramp" photo sensor
+    DigitalInput onRamp;
+
     ///////////////////////////////////////////////////////////////////
     // robot control
     ///////////////////////////////////////////////////////////////////

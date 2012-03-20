@@ -17,7 +17,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 // digital inputs
 #define PRESSURE_DIGIN	1
-#define	BALL_RDY_DIGIN	2	// ball-in-place sensor, not used
+#define	ONRAMP_DIGIN	2	// ramp sensor
 #define	SHOOT_BOT_DIGIN	3
 #define	SHOOT_TOP_DIGIN	4
 #define	ENCODER_LEFT_A	5	// shaft encoder inputs, not used
@@ -37,6 +37,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // solenoid (pneumatic) outputs
 #define	COWCATCHER_SOL	1
 #define	INJECTOR_SOL	2
+#define	TIPPER_SOL	3	// bridge-support ram
 
 // shaft encoder counts
 #define	ENCODER_COUNT	250	// or 300 or 360
@@ -52,6 +53,8 @@ MyRobot::MyRobot() :
     cowcatcher( COWCATCHER_SOL ),
     ball_pickup( PICKUP_RLY, Relay::kBothDirections ),
     illuminator( ILLUMINATOR_RLY, Relay::kForwardOnly ),
+    tipper( TIPPER_SOL ),
+    onRamp( ONRAMP_DIGIN ),
     drive( motor_left, motor_right ),
     pickup( ball_pickup ),
     shooter( SHOOT_BOT_PWM, SHOOT_TOP_PWM, SHOOT_BOT_DIGIN, SHOOT_TOP_DIGIN, INJECTOR_SOL ),
