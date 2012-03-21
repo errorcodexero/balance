@@ -14,8 +14,9 @@ private:
     // pointer to owner
     MyRobot& m_robot;
 
-    Timer turnTimer;
-    bool turnComplete;
+    float m_angle;
+    Timer m_turnTimer;
+    bool m_turnComplete;
 
     static const float turnTolerance;
 

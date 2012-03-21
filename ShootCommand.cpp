@@ -8,7 +8,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float ShootCommand::turnTolerance = 0.80;
+const float ShootCommand::turnTolerance = 0.50;
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
@@ -175,5 +175,5 @@ bool ShootCommand::Run()
 	break;	// stay in this state until gunner releases button
     }
 
-    return false;
+    return true;	// allow interruption at any point
 }

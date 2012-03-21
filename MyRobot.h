@@ -110,7 +110,7 @@ private:
     static void DisableMotor( xCANJaguar& motor );
     static void EnableVoltageControl( xCANJaguar& motor );
     static void EnableSpeedControl( xCANJaguar& motor );
-    static void EnablePositionControl( xCANJaguar& motor );
+    static void EnablePositionControl( xCANJaguar& motor, double p, double i, double d );
 
     double GetJaguarPosition( xCANJaguar& jag, const char *name );
     double GetJaguarDistance( xCANJaguar& jag, const char *name );

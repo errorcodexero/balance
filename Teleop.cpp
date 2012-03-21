@@ -23,14 +23,18 @@ void MyRobot::TeleopInit()
 void MyRobot::TeleopPeriodic()
 {
     OI& oi = GetOI();
-    
     DriveMode newMode;
+    bool buttonDown;
+
     if (oi.TurnLeft10() || oi.TurnRight10() || oi.TurnLeft3() || oi.TurnRight3()) {
+	buttonDown = true;
 	newMode = kTurn;
     } else if (oi.TargetTop() || oi.TargetLeft() || oi.TargetRight() || oi.TargetBottom()) {
+	buttonDown = true;
 	newMode = kShoot;
     } else {
-	newMode = kManual;
+	buttonDown = false;
+	newMode = driveMode;
     }
 
     if (driveMode != newMode) {
@@ -83,7 +87,7 @@ void MyRobot::TeleopPeriodic()
 	break;
     }
 
-    if (done) {
+    if (done && !buttonDown) {
 	// stop this mode
 	switch (driveMode) {
 	case kManual:

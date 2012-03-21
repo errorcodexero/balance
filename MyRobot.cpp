@@ -42,6 +42,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // shaft encoder counts
 #define	ENCODER_COUNT	250	// or 300 or 360
 
+#define	POSITION_P	600.
+#define	POSITION_I	0.005
+#define	POSITION_D	0.001
 
 MyRobot::MyRobot() :
     m_oi(),
@@ -74,6 +77,31 @@ MyRobot::MyRobot() :
 void MyRobot::RobotInit()
 {
     Safe();
+
+    Preferences *pref = Preferences::GetInstance();
+    bool saveNeeded = false;
+    
+    printf("In Balance constructor, pref = 0x%p\n", pref);
+    if (!pref->ContainsKey( "Position.P" )) {
+	pref->PutDouble( "Position.P", POSITION_P );
+	printf("Preferences: save POSITION_P\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Position.I" )) {
+	pref->PutDouble( "Position.I", POSITION_I );
+	printf("Preferences: save POSITION_I\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Position.D" )) {
+	pref->PutDouble( "Position.D", POSITION_D );
+	printf("Preferences: save POSITION_D\n");
+	saveNeeded = true;
+    }
+    if (saveNeeded) {
+	pref->Save();
+	printf("Preferences: saved\n");
+    }
+
     // We don't care about the camera right now, just that it's instantiated.
     (void) AxisCamera::GetInstance();
     ShowState("Initialized","Idle");
@@ -219,14 +247,15 @@ void MyRobot::EnableSpeedControl()
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
 }
 
-void MyRobot::EnablePositionControl( xCANJaguar& motor )
+void MyRobot::EnablePositionControl( xCANJaguar& motor, double p, double i, double d )
 {
     motor.ChangeControlMode( xCANJaguar::kPosition );
-    motor.ConfigMaxOutputVoltage( 6. );
+    motor.ConfigMaxOutputVoltage( 8. );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Brake );
     motor.SetPositionReference( xCANJaguar::kPosRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( ENCODER_COUNT );
-    motor.SetPID( 500.0, 0.1, 40.0 );	// TBD: tune this for position control
+
+    motor.SetPID( p, i, d );
 
     // force change in control mode
     motor.EnableControl( 0.0 );
@@ -248,8 +277,19 @@ void MyRobot::EnablePositionControl( xCANJaguar& motor )
 
 void MyRobot::EnablePositionControl()
 {
-    EnablePositionControl( motor_left );
-    EnablePositionControl( motor_right );
+    Preferences *pref = Preferences::GetInstance();
+
+    double p = pref->GetDouble( "Position.P", POSITION_P );
+    printf("position_p = %g\n", p);
+
+    double i = pref->GetDouble( "Position.I", POSITION_I );
+    printf("position_i = %g\n", i);
+
+    double d = pref->GetDouble( "Position.D", POSITION_D );
+    printf("position_d = %g\n", d);
+
+    EnablePositionControl( motor_left, p, i, d );
+    EnablePositionControl( motor_right, p, i, d );
 
     // Bypass the RobotDrive class for this mode since it doesn't deal
     //   well with arbitrarily large setpoints for multiple wheel rotations.
@@ -259,14 +299,13 @@ void MyRobot::EnablePositionControl()
     driveTime = GetFPGATime();
 }
 
-// shaft encoder counts per inch of robot movement (straight-line movement)
+// shaft encoder rotations per inch of robot movement (straight-line movement)
 // driveScale = (1.0 inch / wheel circumference) * (wheel gear teeth / drive gear teeth);
 //            = (  1.0    /      (8.0 * PI)    ) * (      36         /       17        );
 //
 const double MyRobot::driveScale = 0.08426;
 
-
-// shaft encoder counts per degree of robot rotation (when turning in place)
+// shaft encoder rotations per degree of robot rotation (when turning in place)
 // turnScale = (turn circumference / wheel circumference)
 //             * (wheel gear teeth / drive gear teeth) / 360 degrees
 //           = (    (19.25*PI)     /      (8.0*PI)      )
@@ -303,8 +342,8 @@ double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
 
 bool MyRobot::DriveToPosition( float distance, float tolerance )
 {
-    float left = GetJaguarDistance(motor_left,"left");
-    float right = -GetJaguarDistance(motor_right,"right");
+    float left = GetJaguarPosition(motor_left,"left") / driveScale;
+    float right = -GetJaguarPosition(motor_right,"right") / driveScale;
 
 #if 0
     {
@@ -313,19 +352,13 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     }
 #endif
 
-    if (fabs(left - distance) < tolerance &&
-	fabs(right - distance) < tolerance)
-    {
-	return true;
-    }
-    else
-    {
-	float pos = distance * driveScale;
-	motor_left.Set(pos, 1);
-	motor_right.Set(-pos, 1);
-	xCANJaguar::UpdateSyncGroup(1);
-	return false;
-    }
+    float pos = distance * driveScale;
+    motor_left.Set(pos, 1);
+    motor_right.Set(-pos, 1);
+    xCANJaguar::UpdateSyncGroup(1);
+
+    return (fabs(left - distance) < tolerance &&
+            fabs(right - distance) < tolerance);
 }
 
 double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
@@ -335,8 +368,8 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
 
 bool MyRobot::TurnToAngle( float angle, float tolerance )
 {
-    float left = GetJaguarAngle(motor_left,"left");
-    float right = GetJaguarAngle(motor_right,"right");
+    float left = GetJaguarPosition(motor_left,"left") / turnScale;
+    float right = GetJaguarPosition(motor_right,"right") / turnScale;
 
 #if 0
     {
@@ -345,18 +378,13 @@ bool MyRobot::TurnToAngle( float angle, float tolerance )
     }
 #endif
 
-    if (fabs(left - angle) < tolerance && fabs(right - angle) < tolerance)
-    {
-	return true;
-    }
-    else
-    {
-	float pos = angle * turnScale;
-	motor_left.Set(pos, 1);
-	motor_right.Set(pos, 1);
-	xCANJaguar::UpdateSyncGroup(1);
-	return false;
-    }
+    float pos = angle * turnScale;
+    motor_left.Set(pos, 1);
+    motor_right.Set(pos, 1);
+    xCANJaguar::UpdateSyncGroup(1);
+
+    return (fabs(left - angle) < tolerance &&
+            fabs(right - angle) < tolerance);
 }
 
 START_ROBOT_CLASS(MyRobot);

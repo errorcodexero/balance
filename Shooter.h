@@ -48,7 +48,9 @@ public:
     void InitShooter();
     void Log();
 
-    void SetTarget( int target, float distance, float adjust );
+    static float Ballistics( int target_height, float distance );
+
+    void SetTarget( int height, float distance, float adjust );
     void SetSpeed( float speed );	// set motor speed
     void Start();			// start the motors
     void Stop();			// stop the motors

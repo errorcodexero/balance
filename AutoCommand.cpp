@@ -11,7 +11,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 const float AutoCommand::shotTimeLimit = 4.0;
 const float AutoCommand::turnTimeLimit = 2.0;
 const float AutoCommand::driveTimeLimit = 4.0;
-const float AutoCommand::turnTolerance = 0.5;
+const float AutoCommand::turnTolerance = 0.50;
 const float AutoCommand::driveTolerance = 2.0;
 
 AutoCommand::AutoCommand( MyRobot& theRobot ) : m_robot(theRobot), selector(3)
@@ -33,59 +33,57 @@ void AutoCommand::Start()
 	return;
 
     case 1: // left side, no bridge
-	shotDistance = 115.5;
+	shotDistance = 120.0;
 	turnAngle = -21.4;
 	driveDistance = 0.0;
 	break;
 
     case 2: // center, no bridge
-	shotDistance = 109.0;
+	shotDistance = 124.0;
 	turnAngle = 0.0;
 	driveDistance = 0.0;
 	break;
 
     case 3: // right side, no bridge
-	shotDistance = 115.5;
+	shotDistance = 120.0;
 	turnAngle = 21.4;
 	driveDistance = 0.0;
 	break;
 
     case 4: // left side, center bridge
-	shotDistance = 115.5;
+	shotDistance = 120.0;
 	turnAngle = -(21.4 + 24.8);
-	driveDistance = -150.;
+	driveDistance = -160.;	// -150.
 	break;
 
     case 5: // center, center bridge
-	shotDistance = 109.0;
+	shotDistance = 124.0;
 	turnAngle = 0.0;
-	driveDistance = -136.;
+	driveDistance = -145.;	// -136.
 	break;
 
     case 6: // right side, center bridge
-	shotDistance = 115.5;
+	shotDistance = 120.0;
 	turnAngle = 21.4 + 24.8;
-	driveDistance = -150.;
+	driveDistance = -160.;	// -150.
 	break;
 
     case 7: // left side, right bridge
-	shotDistance = 115.5;
-	// either 55.5 is wrong or large turns need recalibration
-	// turnAngle = -(21.4 + 55.5);
-	turnAngle = -56.;
-	driveDistance = -241.;
+	shotDistance = 120.0;
+	turnAngle = -(21.4 + 55.5);
+	driveDistance = -252.;	// -241.
 	break;
 
     case 8: // center, right bridge
-	shotDistance = 109.0;
+	shotDistance = 124.0;
 	turnAngle = -44.9;
-	driveDistance = -193.;
+	driveDistance = -201.;	// -193.
 	break;
 
     case 9: // right side, right bridge
-	shotDistance = 115.5;
+	shotDistance = 120.0;
 	turnAngle = 21.4 - 28.2;
-	driveDistance = -155.;
+	driveDistance = -165.;	// -155.
 	break;
 
     default: // can't happen
@@ -156,6 +154,7 @@ bool AutoCommand::Run()
 
 	    if (turnComplete) {
 		m_robot.cowcatcher.Set(true);
+		m_robot.pickup.Forward();
 		autoState = kDriving;
 		autoTimer.Reset();
 	    } else {

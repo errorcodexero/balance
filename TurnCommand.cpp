@@ -7,20 +7,28 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float turnTolerance = 0.80;
+const float TurnCommand::turnTolerance = 0.50;
 
 TurnCommand::TurnCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
-    turnTimer.Start();
+    m_turnTimer.Start();
 }
 
 void TurnCommand::Start()
 {
-    m_robot.EnablePositionControl();
-    turnTimer.Reset();
-    turnComplete = false;
+    OI& oi = m_robot.GetOI();
 
-    printf("Start turn\n");
+    m_angle = oi.TurnLeft10()  ? -10.
+	    : oi.TurnRight10() ? 10.
+	    : oi.TurnLeft3()   ? -3.
+	    : oi.TurnRight3()  ? 3.
+	    : 0.;  // can't happen
+
+    m_robot.EnablePositionControl();
+    m_turnTimer.Reset();
+    m_turnComplete = false;
+
+    printf("Start turn %g\n", m_angle);
     MyRobot::ShowState("Turn", "Start");
 }
 
@@ -32,30 +40,23 @@ void TurnCommand::Stop()
 
 bool TurnCommand::Run()
 {
-    OI& oi = m_robot.GetOI();
-
-    if (!turnComplete) {
-
-	float angle = oi.TurnLeft10()  ? -10.
-		    : oi.TurnRight10() ? 10.
-		    : oi.TurnLeft3()   ? -3.
-		    : oi.TurnRight3()  ? 3.
-		    : 0.;  // can't happen
-
-	const float tolerance = 0.50;
-
-	turnComplete = m_robot.TurnToAngle(angle, tolerance);
-
-	if (turnComplete || turnTimer.HasPeriodPassed(2.0)) {
-	    printf("Manual turn %s: %g %g %g\n",
-	       turnComplete ? "complete" : "TIMEOUT", angle,
+    if (!m_turnComplete) {
+#if TESTING
+	(void) m_robot.TurnToAngle(m_angle, turnTolerance);
+	m_turnComplete = false;
+#else
+	m_turnComplete = m_robot.TurnToAngle(m_angle, turnTolerance);
+	if (m_turnComplete || m_turnTimer.Get() > 0.8) {
+	    printf("Manual turn %s: m_angle %g left %g right %g\n",
+	       m_turnComplete ? "complete" : "TIMEOUT", m_angle,
 	       m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
 	       m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
 	    m_robot.DisableMotors();
-	    turnComplete = true;  // even if it's not true
 	    MyRobot::ShowState("Turn", "Complete");
+	    m_turnComplete = true;  // force termination
 	}
+#endif
     }
 
-    return false;
+    return m_turnComplete;
 }

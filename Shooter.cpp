@@ -22,10 +22,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
 #define	ADJUST		4.0F	// speed adjustment range (%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
-// stupid WPILib timers are only 1s resolution
 #define	MOTOR_START	0.2F	// time to wait before encoder output is valid
 #define SHOT_TIME	0.8F	// time to cycle injector up
-#define RELEASE_TIME	1.2F	// time to cycle injector down
+#define RELEASE_TIME	1.4F	// time to cycle injector down
 
 Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
 		  int bottom_geartooth_channel, int top_geartooth_channel,
@@ -162,34 +161,42 @@ void Shooter::SetSpeed( float speed )
     pid_top.SetSetpoint( speed_top );
 }
 
-void Shooter::SetTarget( int target, float distance, float adjust )
+float Shooter::Ballistics( int height, float distance )
 {
-    // these constants for distances in inches
-    const float ballistic_low[3] = { -415.0, 136.3/12., -4.000/144. };	// wild guess
-    const float ballistic_mid[3] = { -75.00, 98.33/12., -2.777/144. };
-    const float ballistic_high[3] = { 265.0, 60.33/12., -1.556/144. };
+    // these constants for distances in inches, speed in PPS
+    const float swish_low[3] = { 3.702E+02, -1.293E+00, 2.145E-02 };
+    const float backboard_low[3] = { 3.773E+02, 1.867E+00, 0.000E+00 };
+//  const float swish_mid[3] = { 1.296E+02, 4.956E+00, -8.586E-03 };
+    const float backboard_mid[3] = { 2.755E+02, 3.556E+00, -3.864E-03 };
+    const float backboard_high[3] = { 5.412E+02, 1.768E+00, -1.383E-03 };
 
     const float *coeff;
 
-    switch (target) {
+    switch (height) {
     case 0:
-	coeff = ballistic_low;
+	coeff = (distance < 133.) ? swish_low : backboard_low;
 	break;
     case 1:
-	coeff = ballistic_mid;
+	coeff = backboard_mid;
 	break;
     case 2:
-	coeff = ballistic_high;
+	coeff = backboard_high;
 	break;
     default:
 	// invalid
-	return;
+	return 0.;
     }
 
-    float speed = coeff[0] + distance * (coeff[1] + (distance * coeff[2]));
-    speed *= (1.0 + adjust * ADJUST / 100.0F);
+    return coeff[0] + distance * (coeff[1] + (distance * coeff[2]));
+}
+
+
+void Shooter::SetTarget( int height, float distance, float adjust )
+{
+    float speed = Ballistics(height, distance) * (1.0 + adjust * ADJUST / 100.0F);
+
     printf("Shooter height %d distance %g adjust %g speed %g\n",
-    		target, distance, adjust, speed);
+    		height, distance, adjust, speed);
 
     speed_bottom = speed;
     pid_bottom.SetSetpoint( speed_bottom );
