@@ -11,7 +11,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 const float AutoCommand::shotTimeLimit = 4.0;
 const float AutoCommand::turnTimeLimit = 2.0;
 const float AutoCommand::driveTimeLimit = 4.0;
-const float AutoCommand::turnTolerance = 0.50;
+const float AutoCommand::turnTolerance = 0.80;
 const float AutoCommand::driveTolerance = 2.0;
 
 AutoCommand::AutoCommand( MyRobot& theRobot ) : m_robot(theRobot), selector(3)

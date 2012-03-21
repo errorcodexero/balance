@@ -8,7 +8,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float ShootCommand::turnTolerance = 0.50;
+const float ShootCommand::turnTolerance = 0.80;
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
