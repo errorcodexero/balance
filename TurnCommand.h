@@ -16,6 +16,7 @@ private:
 
     float m_angle;
     Timer m_turnTimer;
+    bool m_turnDebug;
     bool m_turnComplete;
 
     static const float turnTolerance;

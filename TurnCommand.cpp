@@ -24,6 +24,8 @@ void TurnCommand::Start()
 	    : oi.TurnRight3()  ? 3.
 	    : 0.;  // can't happen
 
+    m_turnDebug = oi.Teach();
+
     m_robot.EnablePositionControl();
     m_turnTimer.Reset();
     m_turnComplete = false;
@@ -41,21 +43,24 @@ void TurnCommand::Stop()
 bool TurnCommand::Run()
 {
     if (!m_turnComplete) {
-#if TESTING
-	(void) m_robot.TurnToAngle(m_angle, turnTolerance);
-	m_turnComplete = false;
-#else
 	m_turnComplete = m_robot.TurnToAngle(m_angle, turnTolerance);
-	if (m_turnComplete || m_turnTimer.Get() > 0.8) {
+	if (m_turnDebug) {
 	    printf("Manual turn %s: m_angle %g left %g right %g\n",
-	       m_turnComplete ? "complete" : "TIMEOUT", m_angle,
+	       m_turnComplete ? "complete" : "turning", m_angle,
 	       m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
 	       m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
-	    m_robot.DisableMotors();
-	    MyRobot::ShowState("Turn", "Complete");
-	    m_turnComplete = true;  // force termination
+	    m_turnComplete = false;
+	} else {
+	    if (m_turnComplete || m_turnTimer.Get() > 0.8) {
+		printf("Manual turn %s: m_angle %g left %g right %g\n",
+		   m_turnComplete ? "complete" : "TIMEOUT", m_angle,
+		   m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
+		   m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
+		m_robot.DisableMotors();
+		MyRobot::ShowState("Turn", "Complete");
+		m_turnComplete = true;  // force termination
+	    }
 	}
-#endif
     }
 
     return m_turnComplete;

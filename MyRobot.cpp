@@ -42,7 +42,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // shaft encoder counts
 #define	ENCODER_COUNT	250	// or 300 or 360
 
-#define	POSITION_P	600.
+#define	POSITION_P	2400.
 #define	POSITION_I	0.005
 #define	POSITION_D	0.001
 
@@ -371,12 +371,10 @@ bool MyRobot::TurnToAngle( float angle, float tolerance )
     float left = GetJaguarPosition(motor_left,"left") / turnScale;
     float right = GetJaguarPosition(motor_right,"right") / turnScale;
 
-#if 0
     {
 	long ms = ((long)GetFPGATime() - driveTime) / 1000;
 	printf("ms %5ld left %g right %g\n", ms, left, right);
     }
-#endif
 
     float pos = angle * turnScale;
     motor_left.Set(pos, 1);

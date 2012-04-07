@@ -64,50 +64,7 @@ bool ShootCommand::Run()
 		printf("Targets found\n");
 		targetLocation = m_robot.target.GetTargetLocation(id);
 	    }
-	    bool targetDebug = oi.Teach();
-	    if (targetDebug) {
-		printf("Target DEBUG MODE\n");
-		// lie about the target, for debugging
-		switch (id) {
-		case Target::kTop:
-		    targetLocation.id = Target::kTop;
-		    targetLocation.height = 2;
-		    targetLocation.angle = 0.0;
-		    targetLocation.distance = 15. * 12.;
-		    targetLocation.valid = true;
-		    break;
-		case Target::kLeft:
-		    targetLocation.id = Target::kLeft;
-		    targetLocation.height = 1;
-		    targetLocation.angle = -3.0;
-		    targetLocation.distance = 12. * 12.;
-		    targetLocation.valid = true;
-		    break;
-		case Target::kRight:
-		    targetLocation.id = Target::kRight;
-		    targetLocation.height = 1;
-		    targetLocation.angle = 10.0;
-		    targetLocation.distance = 12. * 12.;
-		    targetLocation.valid = true;
-		    break;
-		case Target::kBottom:
-		    targetLocation.id = Target::kBottom;
-		    targetLocation.height = 0;
-		    targetLocation.angle = 0.0;
-		    targetLocation.distance = 9. * 12.;
-		    targetLocation.valid = true;
-		    break;
-		default:  // can't happen
-		    targetLocation.id = Target::kCenter;
-		    targetLocation.height = 1;
-		    targetLocation.angle = 0.0;
-		    targetLocation.distance = 6. * 12.;
-		    targetLocation.valid = true;
-		    break;
-		}
-	    }
-
-	    if (targetsFound || targetDebug) {
+	    if (targetsFound) {
 		// start turn toward the target
 		printf("Starting turn: %g degrees\n", targetLocation.angle);
 		m_robot.EnablePositionControl();

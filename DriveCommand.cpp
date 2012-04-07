@@ -45,7 +45,7 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
-    ControlMode newMode = oi.Brake() ? kPosition : selectedMode;
+    ControlMode newMode = oi.Brake() ? kSpeed : selectedMode;
     if (newMode != controlMode) {
 	switch (newMode) {
 	case kSpeed:

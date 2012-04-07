@@ -22,5 +22,6 @@ void MyRobot::AutonomousPeriodic()
 
 void MyRobot::AutonomousContinuous()
 {
+    taskDelay(1);
 }
 

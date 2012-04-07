@@ -112,4 +112,5 @@ void MyRobot::TeleopPeriodic()
 
 void MyRobot::TeleopContinuous()
 {
+    taskDelay(1);
 }
