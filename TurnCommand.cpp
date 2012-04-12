@@ -7,7 +7,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float TurnCommand::turnTolerance = 0.80;
+const float TurnCommand::turnTolerance = 0.50;
 
 TurnCommand::TurnCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {

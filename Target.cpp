@@ -19,7 +19,7 @@ Target::Target() :
     memset(m_falseColor, 0, sizeof(m_falseColor));
     for (int i = 1; i <= 255; i++) {
 	switch ((i-1) % 6) {
-	case 0:	// white
+	case 0:	// white (gray)
 	    m_falseColor[i].R = m_falseColor[i].G = m_falseColor[i].B = 255;
 	    break;
 	case 1: // red
@@ -173,20 +173,38 @@ Target::TargetLocation Target::GetTargetLocation( TargetID which )
 // and camera comparison page:
 // M1011 lens: 4.2mm F2.0
 //
-// from measurement:
-// horizontal FOV: 48 degrees
+// These numbers don't make sense!  The stated FOV is much smaller than
+// that calculated from the lens FL and sensor size.  The stated FOVs
+// for the two cameras are very different, even though they supposedly
+// use the same size sensor and only slightly different lenses.
+//
+// with horizontal angle = 54 degrees and WIDTH = 640 pixels
+// tan(h/2) = tan(27.0 degrees) = 0.50952545
+// (WIDTH/2) / tan(h/2) = 628.03536
+//
+// with horizontal angle = 49 degrees and WIDTH = 640 pixels
+// tan(h/2) = tan(24.5 degrees) = 0.45572626
+// (WIDTH/2) / tan(h/2) = 702.17591
 //
 // with horizontal angle = 48 degrees and WIDTH = 640 pixels
 // tan(h/2) = tan(24 degrees) = 0.445228685;
 // (WIDTH/2) / tan(h/2) = 718.73177;
+//
+// with horizontal angle = 47 degrees and WIDTH = 640 pixels
+// tan(h/2) = tan(24.5 degrees) = 0.434812375;
+// (WIDTH/2) / tan(h/2) = 735.94962
 
 #define	WIDTH	640	// image width, in pixels
 #define	HEIGHT	480	// image height, in pixels
 #define	BORDER	4	// expected minimum spacing from objects to edge of image
 #define	THRESHOLD 200	// image brightness threshold
 
-#define IMAGE_PLANE 718.73177	// M1011 measured
+//	IMAGE_PLANE 702.17591	// 49 degrees
+//	IMAGE_PLANE 718.73177	// 48 degrees
+//	IMAGE_PLANE 735.94962	// 47 degrees
 
+#define IMAGE_PLANE 775.	// M1011 measured, 44.9 degrees
+ 
 // FRC target dimensions:
 //
 // hoop vertical spacing
@@ -322,8 +340,7 @@ static void OverlayParticle( RGBImage *image, Target::Particle *p )
 	points[2].y = (int)(p->bottomBound + 0.5);
 	points[3].x = (int)(p->rightBound + 0.5);
 	points[3].y = (int)(p->topBound + 0.5);
-	imaqOverlayClosedContour(image->GetImaqImage(), points, 4,
-			       &IMAQ_RGB_RED, IMAQ_DRAW_VALUE, NULL);
+	imaqOverlayClosedContour(image->GetImaqImage(), points, 4, &IMAQ_RGB_YELLOW, IMAQ_DRAW_VALUE, NULL);
 
 	points[0].x = (int)(p->xCenter + 0.5) - 10;
 	points[0].y = (int)(p->yCenter + 0.5) - 10;
@@ -333,8 +350,8 @@ static void OverlayParticle( RGBImage *image, Target::Particle *p )
 	points[2].y = (int)(p->yCenter + 0.5) + 10;
 	points[3].x = (int)(p->xCenter + 0.5) + 10;
 	points[3].y = (int)(p->yCenter + 0.5) - 10;
-	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
-	imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_BLUE, NULL);
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_WHITE, NULL);
+	imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_WHITE, NULL);
     }
 }
 
@@ -351,8 +368,8 @@ static void OverlayCenter( RGBImage *image, double x, double y )
     points[3].x = (int)(x + 0.5) + 10;
     points[3].y = (int)(y + 0.5) - 10;
 
-    imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
-    imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_BLUE, NULL);
+    imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_WHITE, NULL);
+    imaqOverlayLine(image->GetImaqImage(), points[2], points[3], &IMAQ_RGB_WHITE, NULL);
 }
 
 static void OverlayLimits( RGBImage *image, double leftX, double centerX, double rightX )
@@ -366,18 +383,25 @@ static void OverlayLimits( RGBImage *image, double leftX, double centerX, double
 	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
     }
 
-    if (centerX >= 0) {
-	points[0].x = points[1].x = (int)(centerX + 0.5);
+   if (rightX >= 0) {
+	points[0].x = points[1].x = (int)(rightX + 0.5);
 	points[0].y = 0;
 	points[1].y = (HEIGHT - 1);
 	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
     }
 
-    if (rightX >= 0) {
-	points[0].x = points[1].x = (int)(rightX + 0.5);
+    {
+	points[0].x = WIDTH / 2 - 2;
 	points[0].y = 0;
-	points[1].y = (HEIGHT - 1);
-	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_BLUE, NULL);
+	points[1].x = points[0].x;
+	points[1].y = HEIGHT - 1;
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_RED, NULL);
+
+	points[0].x = WIDTH / 2 + 2;
+	points[0].y = 0;
+	points[1].x = points[0].x;
+	points[1].y = HEIGHT - 1;
+	imaqOverlayLine(image->GetImaqImage(), points[0], points[1], &IMAQ_RGB_RED, NULL);
     }
 }
 
@@ -445,27 +469,12 @@ bool Target::FindParticles()
     }
 
     // select interesting particles
-#if 1
     if (!imaqThreshold(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
     	/*rangeMin*/ THRESHOLD, /*rangeMax*/ 255, /*useNewValue*/ 1, /*newValue */ 1))
     {
 	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
 	return false;
     }
-#else
-    ThresholdData *pThD;
-    if (!(pThD = imaqAutoThreshold2(m_threshold.GetImaqImage(), m_monoImage.GetImaqImage(),
-    			2, IMAQ_THRESH_INTERCLASS, NULL)))
-    {
-	printf("%s: imaqThreshold FAILED\n", __FUNCTION__);
-	return false;
-    }
-    for (int i = 0; i < 2; i++) {
-	printf("range min %g max %g useNewValue %d newValue %g\n",
-	    pThD[i].rangeMin, pThD[i].rangeMax, pThD[i].useNewValue, pThD[i].newValue);
-    }
-    imaqDispose(pThD);
-#endif
 
     if (!imaqConvexHull(m_convexHull.GetImaqImage(), m_threshold.GetImaqImage(),
     	/*connectivity8*/ 1))

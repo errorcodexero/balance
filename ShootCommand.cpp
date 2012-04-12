@@ -8,7 +8,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float ShootCommand::turnTolerance = 0.80;
+const float ShootCommand::turnTolerance = 0.50;
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
@@ -93,7 +93,7 @@ bool ShootCommand::Run()
 	    // turned the right amount and fire up the shooter.
 	    // Else take another picture.
 	    if (targetLocation.valid && turnComplete) {
-		m_robot.illuminator.Set( Relay::kOff );  // no more pictures
+		m_robot.illuminator.Set( oi.Illuminator() ? Relay::kOn : Relay::kOff );
 		if (targetLocation.id = Target::kCenter) {
 		    // If we're aimed at the center of the target array, just stop here.
 		    printf("Aiming complete, distance = %g\n", targetLocation.distance);
