@@ -153,12 +153,15 @@ bool AutoCommand::Run()
 		break;	// just wait
 
 	    if (turnComplete) {
+		printf("Turn complete...\n");
+		m_robot.EnableSpeedControl();
 		m_robot.cowcatcher.Set(true);
 		m_robot.pickup.Forward();
 		autoState = kDriving;
 		autoTimer.Reset();
 	    } else {
 		// turn failed, so it isn't safe to drive
+		printf("Turn failed - abort!\n");
 		m_robot.DisableMotors();
 		autoState = kStopped;
 	    }
@@ -166,14 +169,17 @@ bool AutoCommand::Run()
 	}
 
 	case kDriving: {
-	    bool driveComplete = m_robot.DriveToPosition(driveDistance, driveTolerance);
-
-	    if (!driveComplete && (autoTimer.Get() < driveTimeLimit))
-		break;
-
-	    // we're done
-	    m_robot.DisableMotors();
-	    autoState = kStopped;
+	    double t = autoTimer.Get();
+	    // ramp up to full drive speed
+	    double s = (t < 0.8) ? t : 0.8;
+	    m_robot.drive.ArcadeDrive(-s, 0., false);
+	    // 0.035 determined by experiment
+	    if (t > -0.035 * driveDistance) {
+		// we're done
+		printf("Driving complete!\n");
+		m_robot.DisableMotors();
+		autoState = kStopped;
+	    }
 	    break;
 	}
 
