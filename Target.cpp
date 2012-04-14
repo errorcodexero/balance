@@ -183,7 +183,7 @@ Target::TargetLocation Target::GetTargetLocation( TargetID which )
 #define	WIDTH	640	// image width, in pixels
 #define	HEIGHT	480	// image height, in pixels
 #define	BORDER	4	// expected minimum spacing from objects to edge of image
-#define	THRESHOLD 200	// image brightness threshold
+#define	THRESHOLD 240	// image brightness threshold
 
 #define IMAGE_PLANE 718.73177	// M1011 measured
 
