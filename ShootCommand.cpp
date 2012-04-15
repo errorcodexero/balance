@@ -2,6 +2,7 @@
 // Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
+#include <math.h>
 #include "ShootCommand.h"
 #include "MyRobot.h"
 #include "Target.h"
@@ -65,12 +66,32 @@ bool ShootCommand::Run()
 		targetLocation = m_robot.target.GetTargetLocation(id);
 	    }
 	    if (targetsFound) {
-		// start turn toward the target
-		printf("Starting turn: %g degrees\n", targetLocation.angle);
-		m_robot.EnablePositionControl();
-		turnTimer.Reset();
-		fireControl = kAction;
-		MyRobot::ShowState("Shoot", "Turning");
+		// are we already on target?
+		if (fabs(targetLocation.angle) > turnTolerance) {
+		    printf("Starting turn: %g degrees\n", targetLocation.angle);
+		    m_robot.EnablePositionControl();
+		    turnTimer.Reset();
+		    fireControl = kAction;
+		    MyRobot::ShowState("Shoot", "Turning");
+		} else {
+		    printf("Aiming complete, angle %g, distance %g\n",
+			targetLocation.angle, targetLocation.distance);
+		    m_robot.illuminator.Set( Relay::kOff );  // no more pictures
+		    if (targetLocation.id = Target::kCenter) {
+			// If we're aimed at the center of the target array, just stop here.
+			fireControl = kNoTarget;
+			MyRobot::ShowState("Shoot", "Aimed At Center");
+		    } else {
+			// Start the shooter.
+			// TBD: change adjustment scaling?
+			printf("Starting shooter...\n");
+			m_robot.shooter.SetTarget(targetLocation.height,
+				targetLocation.distance, (oi.Adjust()-0.5)*2.);
+			m_robot.shooter.Start();
+			fireControl = kShooting;
+			MyRobot::ShowState("Shoot", "Shooting");
+		    }
+		}
 	    } else {
 		printf("No targets visible\n");
 		fireControl = kNoTarget;
@@ -88,35 +109,12 @@ bool ShootCommand::Run()
 	      m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
 	    m_robot.DisableMotors();
 
-	    // If the entire target was already visible and we've
-	    // completed a turn to that location, assume we've
-	    // turned the right amount and fire up the shooter.
-	    // Else take another picture.
-	    if (targetLocation.valid && turnComplete) {
-		m_robot.illuminator.Set( oi.Illuminator() ? Relay::kOn : Relay::kOff );
-		if (targetLocation.id = Target::kCenter) {
-		    // If we're aimed at the center of the target array, just stop here.
-		    printf("Aiming complete, distance = %g\n", targetLocation.distance);
-		    fireControl = kNoTarget;
-		    MyRobot::ShowState("Shoot", "Aimed At Center");
-		} else {
-		    // Start the shooter.
-		    // TBD: change adjustment scaling?
-		    printf("Starting shooter, distance = %g\n", targetLocation.distance);
-		    m_robot.shooter.SetTarget(targetLocation.height, targetLocation.distance,
-					      (oi.Adjust()-0.5)*2.);
-		    m_robot.shooter.Start();
-		    fireControl = kShooting;
-		    MyRobot::ShowState("Shoot", "Shooting");
-		}
-	    } else {
-		printf("Taking another picture...\n");
-		// More of the target should be in view now.
-		// Take another picture and reposition.
-		m_robot.target.StartAcquisition();
-		fireControl = kCamera;
-		MyRobot::ShowState("Shoot", "Looking (again)");
-	    }
+	    printf("Taking another picture...\n");
+	    // More of the target should be in view now.
+	    // Take another picture and reposition.
+	    m_robot.target.StartAcquisition();
+	    fireControl = kCamera;
+	    MyRobot::ShowState("Shoot", "Looking (again)");
 	}
 	break;
 

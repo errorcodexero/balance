@@ -170,7 +170,7 @@ bool AutoCommand::Run()
 	    double t = autoTimer.Get();
 	    // ramp up to full drive speed
 	    double s = (t < 0.8) ? t : 0.8;
-	    m_robot.ArcadeDrive(-s, 0., false);
+	    m_robot.drive.ArcadeDrive(-s, 0., false);
 	    // 0.035 determined by experiment
 	    if (t > -0.035 * driveDistance) {
 		// we're done

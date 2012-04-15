@@ -1,73 +1,37 @@
 <?xml version="1.0"?>
 <dashboard>
-	<static-widget class="edu.wpi.first.smartdashboard.camera.WPICameraExtension">
-		<location x="431" y="0"/>
-		<width>200</width>
-		<height>152</height>
-		<property name="Camera IP Address" value="10.14.25.11"/>
-	</static-widget>
-	<widget field="Balance.tilt" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
-		<location x="388" y="157"/>
-		<width>567</width>
-		<height>196</height>
-		<property name="Buffer Size (samples)" value="200"/>
+	<widget field="t spd" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
+		<location x="221" y="11"/>
+		<property name="Buffer Size (samples)" value="1000"/>
+	</widget>
+	<widget field="target.speed" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="348" y="58"/>
+	</widget>
+	<widget field="b spd" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
+		<location x="634" y="8"/>
+		<width>390</width>
+		<height>303</height>
+		<property name="Buffer Size (samples)" value="1000"/>
+	</widget>
+	<widget field="target.angle" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="337" y="29"/>
+	</widget>
+	<widget field="t set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="29" y="45"/>
+		<width>173</width>
+	</widget>
+	<widget field="b set" type="Double" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="23" y="73"/>
+		<width>177</width>
 	</widget>
 	<widget field="Robot State" type="String" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
-		<location x="48" y="2"/>
+		<location x="18" y="7"/>
 	</widget>
-	<widget field="Drive" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
-		<location x="238" y="3"/>
-	</widget>
-	<widget field="Control" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
-		<location x="347" y="3"/>
-	</widget>
-	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
-		<location x="0" y="0"/>
-	</static-widget>
-	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
-		<location x="0" y="0"/>
-	</static-widget>
-	<hidden field="Left1 set"/>
-	<hidden field="Left1.set"/>
-	<hidden field="RF"/>
-	<hidden field="Joystick Twist"/>
-	<hidden field="Left Top"/>
-	<hidden field="Balance.level"/>
-	<hidden field="Left Y"/>
-	<hidden field="Right Trigger"/>
-	<hidden field="Right1 set"/>
-	<hidden field="Right Top"/>
-	<hidden field="Joystick Trigger"/>
-	<hidden field="Right Twist"/>
-	<hidden field="LR"/>
-	<hidden field="Right Y"/>
-	<hidden field="Right Power"/>
-	<hidden field="Right X"/>
-	<hidden field="LF current"/>
-	<hidden field="Right2.set"/>
-	<hidden field="Left Trigger"/>
-	<hidden field="Right2 set"/>
-	<hidden field="Left2 set"/>
-	<hidden field="Right2"/>
-	<hidden field="Right1"/>
-	<hidden field="Balance.tilt_max"/>
-	<hidden field="Right1.set"/>
-	<hidden field="stickToggle"/>
-	<hidden field="LF voltage"/>
-	<hidden field="RR"/>
-	<hidden field="Joystick Y"/>
-	<hidden field="Joystick X"/>
-	<hidden field="LF speed"/>
-	<hidden field="Left Power"/>
-	<hidden field="Left1"/>
-	<hidden field="Left2"/>
-	<hidden field="Balance.tilt_min"/>
-	<hidden field="Joystick2 Y"/>
-	<hidden field="Joystick2 X"/>
-	<hidden field="Balance.speed"/>
-	<hidden field="Left2.set"/>
-	<hidden field="Camera_X"/>
-	<hidden field="Balance.state"/>
-	<hidden field="Camera_Y"/>
-	<hidden field="LF"/>
+	<hidden field="shooter"/>
+	<hidden field="Drive"/>
+	<hidden field="target.distance"/>
+	<hidden field="target"/>
+	<hidden field="target.valid"/>
+	<hidden field="Balance.tilt"/>
+	<hidden field="Control"/>
 </dashboard>
