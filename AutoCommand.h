@@ -14,8 +14,6 @@ private:
     static const float shotTimeLimit;
     static const float turnTimeLimit;
     static const float driveTimeLimit;
-    static const float turnTolerance;
-    static const float driveTolerance;
 
     // pointer to owner
     MyRobot& m_robot;

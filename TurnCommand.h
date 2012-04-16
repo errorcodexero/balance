@@ -19,8 +19,6 @@ private:
     bool m_turnDebug;
     bool m_turnComplete;
 
-    static const float turnTolerance;
-
 public:
     TurnCommand( MyRobot& theRobot );
 

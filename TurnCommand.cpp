@@ -7,8 +7,6 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float TurnCommand::turnTolerance = 0.50;
-
 TurnCommand::TurnCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
     m_turnTimer.Start();
@@ -43,7 +41,7 @@ void TurnCommand::Stop()
 bool TurnCommand::Run()
 {
     if (!m_turnComplete) {
-	m_turnComplete = m_robot.TurnToAngle(m_angle, turnTolerance);
+	m_turnComplete = m_robot.TurnToAngle(m_angle);
 	if (m_turnDebug) {
 	    printf("Manual turn %s: m_angle %g left %g right %g\n",
 	       m_turnComplete ? "complete" : "turning", m_angle,

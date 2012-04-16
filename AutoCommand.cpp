@@ -10,7 +10,6 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 const float AutoCommand::shotTimeLimit = 4.0;
 const float AutoCommand::turnTimeLimit = 2.0;
-const float AutoCommand::turnTolerance = 0.50;
 
 AutoCommand::AutoCommand( MyRobot& theRobot ) : m_robot(theRobot), selector(3)
 {
@@ -145,7 +144,7 @@ bool AutoCommand::Run()
 	}
 
 	case kTurning: {
-	    bool turnComplete = m_robot.TurnToAngle(turnAngle, turnTolerance);
+	    bool turnComplete = m_robot.TurnToAngle(turnAngle);
 
 	    if (!turnComplete && (autoTimer.Get() < turnTimeLimit))
 		break;	// just wait

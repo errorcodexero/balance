@@ -9,7 +9,7 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
-const float ShootCommand::turnTolerance = 0.50;
+const float ShootCommand::aimTolerance = 0.50;
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
@@ -67,7 +67,7 @@ bool ShootCommand::Run()
 	    }
 	    if (targetsFound) {
 		// are we already on target?
-		if (fabs(targetLocation.angle) > turnTolerance) {
+		if (fabs(targetLocation.angle) > aimTolerance) {
 		    printf("Starting turn: %g degrees\n", targetLocation.angle);
 		    m_robot.EnablePositionControl();
 		    turnTimer.Reset();
@@ -101,7 +101,7 @@ bool ShootCommand::Run()
 	break;
 
     case kAction:
-	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle, turnTolerance);
+	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle);
 	if (turnComplete || turnTimer.Get() > 2.0) {
 	    printf("Target turn %s: %g %g %g\n",
 	      turnComplete ? "complete" : "TIMEOUT", targetLocation.angle,

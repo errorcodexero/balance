@@ -19,7 +19,7 @@ private:
     enum { kLights, kCamera, kAction, kShooting, kNoTarget } fireControl;
     Timer turnTimer;
 
-    static const float turnTolerance;
+    static const float aimTolerance;
 
 public:
     ShootCommand( MyRobot& theRobot );

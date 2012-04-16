@@ -16,9 +16,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // measured max PPS is approx. 1000
 
 #define	MAX_PPS		1200.0F	// max pulses per second from gear tooth sensor
-#define	PID_P		0.010F	// initial PID constants, can be tuned in preferences
-#define	PID_I		0.001F
-#define	PID_D		0.000F
+#define	SHOOTER_P	0.010F	// initial PID constants, can be tuned in preferences
+#define	SHOOTER_I	0.001F
+#define	SHOOTER_D	0.000F
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
 #define	ADJUST		4.0F	// speed adjustment range (%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
@@ -34,7 +34,7 @@ Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
     geartooth_bottom(bottom_geartooth_channel),
     geartooth_top(top_geartooth_channel),
     injector(injector_channel),
-    pid_p(PID_P), pid_i(PID_I), pid_d(PID_D), drive_ratio(DRIVE_RATIO),
+    pid_p(SHOOTER_P), pid_i(SHOOTER_I), pid_d(SHOOTER_D), drive_ratio(DRIVE_RATIO),
     tolerance(TOLERANCE), shot_time(SHOT_TIME), release_time(RELEASE_TIME),
     pid_bottom( pid_p, pid_i, pid_d, &geartooth_bottom, &motor_bottom ),
     pid_top( pid_p, pid_i, pid_d, &geartooth_top, &motor_top ),
@@ -47,17 +47,17 @@ Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
     
     printf("In Shooter constructor, pref = 0x%p\n", pref);
     if (!pref->ContainsKey( "Shooter.pid_p" )) {
-	pref->PutDouble( "Shooter.pid_p", PID_P );
+	pref->PutDouble( "Shooter.pid_p", SHOOTER_P );
 	printf("Preferences: save P\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Shooter.pid_i" )) {
-	pref->PutDouble( "Shooter.pid_i", PID_I );
+	pref->PutDouble( "Shooter.pid_i", SHOOTER_I );
 	printf("Preferences: save I\n");
 	saveNeeded = true;
     }
     if (!pref->ContainsKey( "Shooter.pid_d" )) {
-	pref->PutDouble( "Shooter.pid_d", PID_D );
+	pref->PutDouble( "Shooter.pid_d", SHOOTER_D );
 	printf("Preferences: save D\n");
 	saveNeeded = true;
     }
@@ -100,9 +100,9 @@ void Shooter::InitShooter()
 
     Preferences *pref = Preferences::GetInstance();
 
-    pid_p = pref->GetDouble( "Shooter.pid_p", PID_P );
-    pid_i = pref->GetDouble( "Shooter.pid_i", PID_I );
-    pid_d = pref->GetDouble( "Shooter.pid_d", PID_D );
+    pid_p = pref->GetDouble( "Shooter.pid_p", SHOOTER_P );
+    pid_i = pref->GetDouble( "Shooter.pid_i", SHOOTER_I );
+    pid_d = pref->GetDouble( "Shooter.pid_d", SHOOTER_D );
     drive_ratio = pref->GetDouble( "Shooter.drive_ratio", DRIVE_RATIO );
     tolerance = pref->GetDouble( "Shooter.tolerance", TOLERANCE );
     shot_time = pref->GetDouble( "Shooter.shot_time", SHOT_TIME );

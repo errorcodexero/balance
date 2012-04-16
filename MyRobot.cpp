@@ -42,9 +42,15 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // shaft encoder counts
 #define	ENCODER_COUNT	250	// or 300 or 360
 
+#define	SPEED_P		0.300
+#define	SPEED_I		0.003
+#define	SPEED_D		0.001
+#define	DRIVE_TOLERANCE	0.50
+
 #define	POSITION_P	2400.
 #define	POSITION_I	0.005
 #define	POSITION_D	0.001
+#define	TURN_TOLERANCE	0.35
 
 MyRobot::MyRobot() :
     m_oi(),
@@ -65,7 +71,9 @@ MyRobot::MyRobot() :
     m_turnCommand(*this),
     m_shootCommand(*this),
     driveMode(kManual),
-    driveTime(0)
+    driveTime(0),
+    m_driveTolerance( DRIVE_TOLERANCE ),
+    m_turnTolerance( TURN_TOLERANCE )
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
     RobotInit();
@@ -79,6 +87,26 @@ void MyRobot::RobotInit()
     bool saveNeeded = false;
     
     printf("In Balance constructor, pref = 0x%p\n", pref);
+    if (!pref->ContainsKey( "Speed.P" )) {
+	pref->PutDouble( "Speed.P", SPEED_P );
+	printf("Preferences: save SPEED_P\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Speed.I" )) {
+	pref->PutDouble( "Speed.I", SPEED_I );
+	printf("Preferences: save SPEED_I\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Speed.D" )) {
+	pref->PutDouble( "Speed.D", SPEED_D );
+	printf("Preferences: save SPEED_D\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Drive.T" )) {
+	pref->PutDouble( "Drive.T", DRIVE_TOLERANCE );
+	printf("Preferences: save DRIVE_T\n");
+	saveNeeded = true;
+    }
     if (!pref->ContainsKey( "Position.P" )) {
 	pref->PutDouble( "Position.P", POSITION_P );
 	printf("Preferences: save POSITION_P\n");
@@ -92,6 +120,11 @@ void MyRobot::RobotInit()
     if (!pref->ContainsKey( "Position.D" )) {
 	pref->PutDouble( "Position.D", POSITION_D );
 	printf("Preferences: save POSITION_D\n");
+	saveNeeded = true;
+    }
+    if (!pref->ContainsKey( "Turn.T" )) {
+	pref->PutDouble( "Turn.T", TURN_TOLERANCE );
+	printf("Preferences: save TURN_T\n");
 	saveNeeded = true;
     }
     if (saveNeeded) {
@@ -194,14 +227,14 @@ void MyRobot::EnableVoltageControl()
     drive.SetLeftRightMotorOutputs( 0.0F, 0.0F );
 }
 
-void MyRobot::EnableSpeedControl( xCANJaguar& motor )
+void MyRobot::EnableSpeedControl( xCANJaguar& motor, double p, double i, double d )
 {
     motor.ChangeControlMode( xCANJaguar::kSpeed );
     motor.ConfigMaxOutputVoltage( 13.2 );
     motor.ConfigNeutralMode( xCANJaguar::kNeutralMode_Brake );
     motor.SetSpeedReference( xCANJaguar::kSpeedRef_QuadEncoder );
     motor.ConfigEncoderCodesPerRev( ENCODER_COUNT );
-    motor.SetPID( 0.300, 0.003, 0.001 );
+    motor.SetPID( p, i, d );
 
     // force change in control mode
     motor.EnableControl();
@@ -223,10 +256,21 @@ void MyRobot::EnableSpeedControl( xCANJaguar& motor )
 
 void MyRobot::EnableSpeedControl()
 {
-    EnableSpeedControl( motor_left );
-    EnableSpeedControl( motor_right );
+    Preferences *pref = Preferences::GetInstance();
 
-    drive.SetMaxOutput( 300 );			// 300 RPM is close to practical top speed
+    double p = pref->GetDouble( "Speed.P", SPEED_P );
+    printf("speed_p = %g\n", p);
+
+    double i = pref->GetDouble( "Speed.I", SPEED_I );
+    printf("speed_i = %g\n", i);
+
+    double d = pref->GetDouble( "Speed.D", SPEED_D );
+    printf("speed_d = %g\n", d);
+
+    EnableSpeedControl( motor_left, p, i, d );
+    EnableSpeedControl( motor_right, p, i, d );
+
+    drive.SetMaxOutput( 300 );  // limit top speed for better low-speed control
 
     // Feed the watchdog now to avoid a race condition when enabling
     //   motorSafetyHelper with the previous timer already expired.
@@ -284,6 +328,12 @@ void MyRobot::EnablePositionControl()
     double d = pref->GetDouble( "Position.D", POSITION_D );
     printf("position_d = %g\n", d);
 
+    m_driveTolerance = pref->GetDouble( "Drive.T", DRIVE_TOLERANCE );
+    printf("drive_t = %g\n", m_driveTolerance);
+
+    m_turnTolerance = pref->GetDouble( "Turn.T", TURN_TOLERANCE );
+    printf("turn_t = %g\n", m_turnTolerance);
+
     EnablePositionControl( motor_left, p, i, d );
     EnablePositionControl( motor_right, p, i, d );
 
@@ -336,7 +386,7 @@ double MyRobot::GetJaguarDistance( xCANJaguar& jag, const char *name )
     return GetJaguarPosition(jag, name) / driveScale;
 }
 
-bool MyRobot::DriveToPosition( float distance, float tolerance )
+bool MyRobot::DriveToPosition( float distance )
 {
     float left = GetJaguarPosition(motor_left,"left") / driveScale;
     float right = -GetJaguarPosition(motor_right,"right") / driveScale;
@@ -353,8 +403,8 @@ bool MyRobot::DriveToPosition( float distance, float tolerance )
     motor_right.Set(-pos, 1);
     xCANJaguar::UpdateSyncGroup(1);
 
-    return (fabs(left - distance) < tolerance &&
-            fabs(right - distance) < tolerance);
+    return (fabs(left - distance) < m_driveTolerance &&
+            fabs(right - distance) < m_driveTolerance);
 }
 
 double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
@@ -362,7 +412,7 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
     return GetJaguarPosition(jag, name) / turnScale;
 }
 
-bool MyRobot::TurnToAngle( float angle, float tolerance )
+bool MyRobot::TurnToAngle( float angle )
 {
     float left = GetJaguarPosition(motor_left,"left") / turnScale;
     float right = GetJaguarPosition(motor_right,"right") / turnScale;
@@ -377,8 +427,8 @@ bool MyRobot::TurnToAngle( float angle, float tolerance )
     motor_right.Set(pos, 1);
     xCANJaguar::UpdateSyncGroup(1);
 
-    return (fabs(left - angle) < tolerance &&
-            fabs(right - angle) < tolerance);
+    return (fabs(left - angle) < m_turnTolerance &&
+            fabs(right - angle) < m_turnTolerance);
 }
 
 START_ROBOT_CLASS(MyRobot);

@@ -97,13 +97,16 @@ private:
     DriveMode driveMode;
     long driveTime;	// in milliseconds
 
+    double m_driveTolerance;
+    double m_turnTolerance;
+
     ///////////////////////////////////////////////////////////////////
     // helper functions
     ///////////////////////////////////////////////////////////////////
 
     static void DisableMotor( xCANJaguar& motor );
     static void EnableVoltageControl( xCANJaguar& motor );
-    static void EnableSpeedControl( xCANJaguar& motor );
+    static void EnableSpeedControl( xCANJaguar& motor, double p, double i, double d );
     static void EnablePositionControl( xCANJaguar& motor, double p, double i, double d );
 
     double GetJaguarPosition( xCANJaguar& jag, const char *name );
@@ -121,8 +124,8 @@ public:
     void EnableVoltageControl();
     void EnableSpeedControl();
     void EnablePositionControl();
-    bool DriveToPosition( float distance, float tolerance );
-    bool TurnToAngle( float angle, float tolerance );
+    bool DriveToPosition( float distance );
+    bool TurnToAngle( float angle );
 
     static void ShowState( char *mode, char *state );
 
