@@ -14,15 +14,8 @@ private:
     // pointer to owner
     MyRobot& m_robot;
 
-    // dashboard controls
-    SendableChooser driveChooser;
-    typedef enum { kFlightStick, kArcade, kXY, kTwoStick } DriveType;
-    DriveType driveMode;
-
-    SendableChooser controlChooser;
-    typedef enum { kVoltage, kSpeed, kPosition } ControlMode;
-    ControlMode selectedMode;
-    ControlMode controlMode;
+    enum ControlMode { kVoltage, kSpeed };
+    ControlMode m_controlMode;
 
     // internal state
     bool m_prevTrigger;	// previous trigger state

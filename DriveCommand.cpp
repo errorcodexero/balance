@@ -10,27 +10,12 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 DriveCommand::DriveCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
-    driveChooser.AddDefault("FlightStick", (void *) kFlightStick);
-    driveChooser.AddObject("Arcade",       (void *) kArcade);
-    driveChooser.AddObject("X-Y",          (void *) kXY);
-    driveChooser.AddObject("TwoStick",     (void *) kTwoStick);
-    SmartDashboard::GetInstance()->PutData("Drive", &driveChooser);
-
-    controlChooser.AddDefault("Voltage", (void *) kVoltage);
-    controlChooser.AddObject("Speed",    (void *) kSpeed);
-    SmartDashboard::GetInstance()->PutData("Control", &controlChooser);
 }
 
 void DriveCommand::Start()
 {
-    driveMode = (DriveType) (int) driveChooser.GetSelected();
-
-    controlMode = selectedMode = (ControlMode) (int) controlChooser.GetSelected();
-    if (controlMode == kSpeed)
-	m_robot.EnableSpeedControl();
-    else
-	m_robot.EnableVoltageControl();
-
+    m_controlMode = kVoltage;
+    m_robot.EnableVoltageControl();
     MyRobot::ShowState("Drive", "Start");
 }
 
@@ -45,8 +30,8 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
-    ControlMode newMode = oi.Brake() ? kSpeed : selectedMode;
-    if (newMode != controlMode) {
+    ControlMode newMode = oi.Brake() ? kSpeed : kVoltage;
+    if (newMode != m_controlMode) {
 	switch (newMode) {
 	case kSpeed:
 	    printf("changing control mode to kSpeed\n");
@@ -56,46 +41,14 @@ bool DriveCommand::Run()
 	    printf("changing control mode to kVoltage\n");
 	    m_robot.EnableVoltageControl();
 	    break;
-	case kPosition:
-	    printf("changing control mode to kPosition\n");
-	    m_robot.EnablePositionControl();
-	    break;
 	}
-	controlMode = newMode;
+	m_controlMode = newMode;
     }
 
-    float leftY  = oi.GetLeftY();
     float rightY = oi.GetRightY();
-    float rightX = oi.GetRightX();
     float rightT = oi.GetRightTwist();
 
-    if (controlMode == kPosition) {
-	// single stick, no turns
-	(void) m_robot.DriveToPosition( 44. * rightY, 0. );
-    } else {
-	switch (driveMode) {
-	case kFlightStick:
-	    m_robot.drive.ArcadeDrive( rightY, -rightT / 2.0, false );
-	    break;
-	case kArcade:
-	    m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
-	    break;
-	case kXY:
-	    if (rightY > 0.10) {
-		m_robot.drive.ArcadeDrive( rightY, rightX / 2.0, false );
-	    } else {
-		m_robot.drive.ArcadeDrive( rightY, -rightX / 2.0, false );
-	    }
-	    break;
-	case kTwoStick:
-	    m_robot.drive.TankDrive( rightY, leftY );
-	    break;
-	default:
-	    printf("ERROR: Invalid drive mode (can't happen)\n");
-	    m_robot.DisableMotors();
-	    break;
-	}
-    }
+    m_robot.drive.ArcadeDrive( rightY, -rightT / 3.0, false );
 
     ////////////////////////////////////////
 
