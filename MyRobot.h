@@ -9,7 +9,6 @@
 #include "xCounter.h"
 #include "xGearTooth.h"
 #include "xPIDController.h"
-#include "Balance.h"
 #include "Pickup.h"
 #include "Shooter.h"
 #include "Target.h"
@@ -18,7 +17,6 @@
 #include "DriveCommand.h"
 #include "TurnCommand.h"
 #include "ShootCommand.h"
-#include "Balance.h"
 
 class MyRobot : public IterativeRobot
 {
@@ -47,9 +45,6 @@ private:
 
     // motor controllers
     xCANJaguar motor_right, motor_left;
-
-    // Gyro (rate of pitch/yaw) inputs
-    Gyro pitch, yaw;
 
     // Compressor (control and sensor)
     Compressor compressor;
@@ -97,9 +92,8 @@ private:
     DriveCommand m_driveCommand;
     TurnCommand  m_turnCommand;
     ShootCommand m_shootCommand;
-    Balance m_balance;
 
-    typedef enum { kManual, kTurn, kShoot, kBalance } DriveMode;
+    typedef enum { kManual, kTurn, kShoot } DriveMode;
     DriveMode driveMode;
     long driveTime;	// in milliseconds
 

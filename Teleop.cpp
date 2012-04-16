@@ -13,7 +13,6 @@ void MyRobot::TeleopInit()
     m_turnCommand.Stop();
     m_shootCommand.Stop();
     m_autoCommand.Stop();
-    m_balance.InitBalance();
     shooter.InitShooter();
 
     driveMode = kManual;
@@ -48,9 +47,6 @@ void MyRobot::TeleopPeriodic()
 	case kShoot:
 	    m_shootCommand.Stop();
 	    break;
-	case kBalance:
-	    m_balance.Stop();
-	    break;
 	}
 
 	switch (newMode) {
@@ -62,9 +58,6 @@ void MyRobot::TeleopPeriodic()
 	    break;
 	case kShoot:
 	    m_shootCommand.Start();
-	    break;
-	case kBalance:
-	    m_balance.Start();
 	    break;
 	}
 
@@ -82,9 +75,6 @@ void MyRobot::TeleopPeriodic()
     case kShoot:
 	done = m_shootCommand.Run();
 	break;
-    case kBalance:
-	done = m_balance.Run();
-	break;
     }
 
     if (done && !buttonDown) {
@@ -98,9 +88,6 @@ void MyRobot::TeleopPeriodic()
 	    break;
 	case kShoot:
 	    m_shootCommand.Stop();
-	    break;
-	case kBalance:
-	    m_balance.Stop();
 	    break;
 	}
 

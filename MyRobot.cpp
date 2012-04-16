@@ -50,8 +50,6 @@ MyRobot::MyRobot() :
     m_oi(),
     motor_right( MOTOR_RIGHT ),
     motor_left( MOTOR_LEFT ),
-    pitch( PITCH_ANAIN ),
-    yaw( YAW_ANAIN ),
     compressor( COMPRESSOR_RLY, PRESSURE_DIGIN ),
     cowcatcher( COWCATCHER_SOL ),
     ball_pickup( PICKUP_RLY, Relay::kBothDirections ),
@@ -66,7 +64,6 @@ MyRobot::MyRobot() :
     m_driveCommand(*this),
     m_turnCommand(*this),
     m_shootCommand(*this),
-    m_balance(*this),
     driveMode(kManual),
     driveTime(0)
 {
@@ -120,7 +117,6 @@ void MyRobot::Safe()
     m_driveCommand.Stop();
     m_turnCommand.Stop();
     m_shootCommand.Stop();
-    m_balance.Stop();
     DisableMotors();
     pickup.Stop();
     shooter.Stop();

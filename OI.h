@@ -9,7 +9,6 @@
 #include "xCounter.h"
 #include "xGearTooth.h"
 #include "xPIDController.h"
-#include "Balance.h"
 #include "Pickup.h"
 #include "Shooter.h"
 #include "Target.h"
