@@ -118,6 +118,7 @@ bool DriveCommand::Run()
 	break;
     }
     if (m_robot.shooter.IsRunning()) {
+#if SHOOTER_ASSIST
 	int height = oi.Extra();
 	if (m_robot.target.ProcessingComplete()) {
 	    bool targetsFound = m_robot.target.TargetsFound();
@@ -173,6 +174,7 @@ bool DriveCommand::Run()
 	    }
 	    m_robot.target.StartAcquisition();
 	}
+#endif // SHOOTER_ASSIST
 
 	float speed = 0.300 + (oi.Adjust() * 0.650);
 	m_robot.shooter.SetSpeed(speed);

@@ -19,14 +19,27 @@ ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 void ShootCommand::Start()
 {
     OI& oi = m_robot.GetOI();
+    const char *targetName;
 
-    const char *target = oi.TargetTop() ? "top"
-		       : oi.TargetLeft() ? "left"
-		       : oi.TargetRight() ? "right"
-		       : oi.TargetBottom() ? "bottom"
-		       : "center";  // can't happen
+    if (oi.TargetTop()) {
+	m_targetID = Target::kTop;
+	targetName = "top";
+    } else if (oi.TargetLeft()) {
+	m_targetID = Target::kLeft;
+	targetName = "left";
+    } else if (oi.TargetRight()) {
+	m_targetID = Target::kRight;
+	targetName = "right";
+    } else if (oi.TargetBottom()) {
+	m_targetID = Target::kBottom;
+	targetName = "bottom";
+    } else {
+	// shooter started without a target
+	m_targetID = Target::kCenter;
+	targetName = "center";
+    }
 
-    printf("Starting targeting sequence: %s\n", target);
+    printf("Starting targeting sequence: %s\n", targetName);
 
     m_robot.DisableMotors();
     m_robot.illuminator.Set( Relay::kOn );
@@ -43,18 +56,13 @@ void ShootCommand::Stop()
 
 bool ShootCommand::Run()
 {
-    OI& oi = m_robot.GetOI();
-    Target::TargetID id = oi.TargetTop() ? Target::kTop
-			: oi.TargetLeft() ? Target::kLeft
-			: oi.TargetRight() ? Target::kRight
-			: oi.TargetBottom() ? Target::kBottom
-			: Target::kCenter;  // can't happen
-
     switch (fireControl) {
     case kLights:
-	if (turnTimer.Get() > 0.5) {
+	// wait a while for the camera to adjust to the lighting change
+	if (turnTimer.Get() > 1.5) {
 	    m_robot.target.StartAcquisition();
 	    fireControl = kCamera;
+	    MyRobot::ShowState("Shoot", "Camera");
 	}
 	break;
     case kCamera:
@@ -63,24 +71,24 @@ bool ShootCommand::Run()
 	    bool targetsFound = m_robot.target.TargetsFound();
 	    if (targetsFound) {
 		printf("Targets found\n");
-		targetLocation = m_robot.target.GetTargetLocation(id);
-	    }
-	    if (targetsFound) {
+		targetLocation = m_robot.target.GetTargetLocation(m_targetID);
 		// are we already on target?
-		if (fabs(targetLocation.angle) > aimTolerance) {
-		    printf("Starting turn: %g degrees\n", targetLocation.angle);
-		    m_robot.EnablePositionControl();
-		    turnTimer.Reset();
-		    fireControl = kAction;
-		    MyRobot::ShowState("Shoot", "Turning");
-		} else {
-		    printf("Aiming complete, angle %g, distance %g\n",
+		OI& oi = m_robot.GetOI();
+		if (oi.Extra() == 0) {
+		    // camera only - no motion
+		    printf("Targeting location: visible %d, angle %g, distance %g\n",
+			targetLocation.valid, targetLocation.angle, targetLocation.distance);
+		    m_robot.illuminator.Set( Relay::kOff );  // no more pictures
+		    fireControl = kNoTarget;
+		    MyRobot::ShowState("Shoot", "Complete");
+		} else if (targetLocation.valid && (fabs(targetLocation.angle) < aimTolerance)) {
+		    printf("Aiming complete: angle %g, distance %g\n",
 			targetLocation.angle, targetLocation.distance);
 		    m_robot.illuminator.Set( Relay::kOff );  // no more pictures
-		    if (targetLocation.id = Target::kCenter) {
+		    if (oi.Extra() == 1 || targetLocation.id == Target::kCenter) {
 			// If we're aimed at the center of the target array, just stop here.
 			fireControl = kNoTarget;
-			MyRobot::ShowState("Shoot", "Aimed At Center");
+			MyRobot::ShowState("Shoot", "Complete");
 		    } else {
 			// Start the shooter.
 			// TBD: change adjustment scaling?
@@ -91,6 +99,12 @@ bool ShootCommand::Run()
 			fireControl = kShooting;
 			MyRobot::ShowState("Shoot", "Shooting");
 		    }
+		} else {
+		    printf("Starting turn: %g degrees\n", targetLocation.angle);
+		    m_robot.EnablePositionControl();
+		    turnTimer.Reset();
+		    fireControl = kAction;
+		    MyRobot::ShowState("Shoot", "Action");
 		}
 	    } else {
 		printf("No targets visible\n");
@@ -114,7 +128,7 @@ bool ShootCommand::Run()
 	    // Take another picture and reposition.
 	    m_robot.target.StartAcquisition();
 	    fireControl = kCamera;
-	    MyRobot::ShowState("Shoot", "Looking (again)");
+	    MyRobot::ShowState("Shoot", "Camera");
 	}
 	break;
 

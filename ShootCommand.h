@@ -15,6 +15,7 @@ private:
     // pointer to owner
     MyRobot& m_robot;
 
+    Target::TargetID m_targetID;
     Target::TargetLocation targetLocation;
     enum { kLights, kCamera, kAction, kShooting, kNoTarget } fireControl;
     Timer turnTimer;
