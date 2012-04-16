@@ -2,6 +2,7 @@
 // Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
+#include "xAxisCamera.h"
 #include <math.h>
 #include "Target.h"
 #include "Version.h"
@@ -312,7 +313,7 @@ bool Target::GetImage()
 //  printf("Target::GetImage\n");
     long then = (long) GetFPGATime();
 
-    AxisCamera& axisCamera = AxisCamera::GetInstance();
+    xAxisCamera& axisCamera = xAxisCamera::GetInstance();
     if (!axisCamera.IsFreshImage()) {
 	return false;
     }
