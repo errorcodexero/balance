@@ -144,13 +144,31 @@ void Shooter::InitShooter()
 
 void Shooter::Log()
 {
-    SmartDashboard::Log(speed_bottom, "b set");
-    SmartDashboard::Log(pid_bottom.GetInput(), "b spd");
-    // SmartDashboard::Log(pid_bottom.GetError(), "b err");
-    SmartDashboard::Log(speed_top, "t set");
-    SmartDashboard::Log(pid_top.GetInput(), "t spd");
-    // SmartDashboard::Log(pid_top.GetError(), "t err");
-    SmartDashboard::Log(IsReady(), "shooter");
+#if 0
+    static int logCount = 0;
+
+    if (IsRunning()) {
+	if (++logCount >= 20) {
+	    SmartDashboard::Log(speed_bottom, "b set");
+	    SmartDashboard::Log(pid_bottom.GetInput(), "b spd");
+	    // SmartDashboard::Log(pid_bottom.GetError(), "b err");
+	    SmartDashboard::Log(speed_top, "t set");
+	    SmartDashboard::Log(pid_top.GetInput(), "t spd");
+	    // SmartDashboard::Log(pid_top.GetError(), "t err");
+	    SmartDashboard::Log(IsReady(), "shooter");
+	    logCount = 0;
+	}
+    } else {
+	logCount = 0;
+    }
+#endif
+
+    char msg[16];
+    snprintf(msg, sizeof msg, "b speed %6.0f", speed_bottom);
+    DriverStationLCD *lcd = DriverStationLCD::GetInstance();
+    lcd->PrintfLine(DriverStationLCD::kUser_Line3, msg);
+    lcd->UpdateLCD();
+
 }
 
 void Shooter::SetSpeed( float speed )
@@ -260,17 +278,11 @@ void Shooter::Reset()
 
 void Shooter::Run()
 {
-    static int logCount = 0;
     if (IsRunning()) {
 	pid_bottom.SetSetpoint( speed_bottom );
 	pid_top.SetSetpoint( speed_top );
-	if (++logCount >= 20) {
-	    Log();
-	    logCount = 0;
-	}
-    } else {
-	logCount = 0;
     }
+    Log();
 
     switch (shooting) {
     case kIdle:
