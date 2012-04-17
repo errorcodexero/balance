@@ -15,6 +15,8 @@ public:
  
     typedef enum { kCenter, kTop, kBottom, kLeft, kRight } TargetID;
 
+    static const char *TargetName( TargetID id );
+
     struct TargetLocation {
 	TargetID id;		// which target
 	int height;		// 0 = bottom, 1 = middle, 2 = top

@@ -9,6 +9,33 @@
 
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+const char *Target::TargetName( TargetID id )
+{
+    const char *targetName;
+
+    switch (id) {
+    case Target::kTop: 
+	targetName = "top";
+	break;
+    case Target::kLeft:
+	targetName = "left";
+	break;
+    case Target::kRight:
+	targetName = "right";
+	break;
+    case Target::kBottom:
+	targetName = "bottom";
+	break;
+    case Target::kCenter:
+    default: // "can't happen"
+	targetName = "center";
+	break;
+    }
+
+    return targetName;
+}
+
+
 void Target::TargetProcess( Target *t )
 {
     t->Run();

@@ -7,22 +7,16 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+const float TurnCommand::turnTimeout = 2.0;
+
 TurnCommand::TurnCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
     m_turnTimer.Start();
 }
 
-void TurnCommand::Start()
+void TurnCommand::Start( float angle )
 {
-    OI& oi = m_robot.GetOI();
-
-    m_angle = oi.TurnLeft10()  ? -10.
-	    : oi.TurnRight10() ? 10.
-	    : oi.TurnLeft3()   ? -3.
-	    : oi.TurnRight3()  ? 3.
-	    : 0.;  // can't happen
-
-    m_turnDebug = oi.Teach();
+    m_angle = angle;
 
     m_robot.EnablePositionControl();
     m_turnTimer.Reset();
@@ -42,22 +36,16 @@ bool TurnCommand::Run()
 {
     if (!m_turnComplete) {
 	m_turnComplete = m_robot.TurnToAngle(m_angle);
-	if (m_turnDebug) {
-	    printf("Manual turn %s: m_angle %g left %g right %g\n",
-	       m_turnComplete ? "complete" : "turning", m_angle,
-	       m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
-	       m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
-	    m_turnComplete = false;
-	} else {
-	    if (m_turnComplete || m_turnTimer.Get() > 0.8) {
+	if (m_turnComplete || (m_turnTimer.Get() > turnTimeout)) {
+	    if (m_robot.GetOI().Teach()) {
 		printf("Manual turn %s: m_angle %g left %g right %g\n",
 		   m_turnComplete ? "complete" : "TIMEOUT", m_angle,
 		   m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
 		   m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
-		m_robot.DisableMotors();
-		MyRobot::ShowState("Turn", "Complete");
-		m_turnComplete = true;  // force termination
 	    }
+	    m_robot.DisableMotors();
+	    MyRobot::ShowState("Turn", "Complete");
+	    m_turnComplete = true;  // force termination
 	}
     }
 

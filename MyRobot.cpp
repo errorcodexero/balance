@@ -64,14 +64,14 @@ MyRobot::MyRobot() :
     onRamp( ONRAMP_DIGIN ),
     drive( motor_left, motor_right ),
     pickup( ball_pickup ),
-    shooter( SHOOT_BOT_PWM, SHOOT_TOP_PWM, SHOOT_BOT_DIGIN, SHOOT_TOP_DIGIN, INJECTOR_SOL ),
+    shooter( *this, SHOOT_BOT_PWM, SHOOT_TOP_PWM, SHOOT_BOT_DIGIN, SHOOT_TOP_DIGIN, INJECTOR_SOL ),
     target(),
     m_autoCommand(*this),
     m_driveCommand(*this),
     m_turnCommand(*this),
     m_shootCommand(*this),
-    driveMode(kManual),
-    driveTime(0),
+    m_driveMode(kManual),
+    m_driveTime(0),
     m_driveTolerance( DRIVE_TOLERANCE ),
     m_turnTolerance( TURN_TOLERANCE )
 {
@@ -156,7 +156,7 @@ void MyRobot::Safe()
     cowcatcher.Set( false );
 }
 
-void MyRobot::ShowState( char *mode, char *state )
+void MyRobot::ShowState( const char *mode, const char *state )
 {
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     lcd->PrintfLine(DriverStationLCD::kUser_Line1, mode);
@@ -342,7 +342,7 @@ void MyRobot::EnablePositionControl()
     drive.SetSafetyEnabled( false );
 
     // Start the timer
-    driveTime = GetFPGATime();
+    m_driveTime = GetFPGATime();
 }
 
 // shaft encoder rotations per inch of robot movement (straight-line movement)
@@ -391,12 +391,10 @@ bool MyRobot::DriveToPosition( float distance )
     float left = GetJaguarPosition(motor_left,"left") / driveScale;
     float right = -GetJaguarPosition(motor_right,"right") / driveScale;
 
-#if 0
-    {
-	long ms = ((long)GetFPGATime() - driveTime) / 1000;
+    if (m_oi.Teach()) {
+	long ms = ((long)GetFPGATime() - m_driveTime) / 1000;
 	printf("ms %5ld left %g right %g\n", ms, left, right);
     }
-#endif
 
     float pos = distance * driveScale;
     motor_left.Set(pos, 1);
@@ -417,8 +415,8 @@ bool MyRobot::TurnToAngle( float angle )
     float left = GetJaguarPosition(motor_left,"left") / turnScale;
     float right = GetJaguarPosition(motor_right,"right") / turnScale;
 
-    {
-	long ms = ((long)GetFPGATime() - driveTime) / 1000;
+    if (m_oi.Teach()) {
+	long ms = ((long)GetFPGATime() - m_driveTime) / 1000;
 	printf("ms %5ld left %g right %g\n", ms, left, right);
     }
 

@@ -11,23 +11,32 @@ class MyRobot;
 
 class ShootCommand
 {
+public:
+    ShootCommand( MyRobot& theRobot );
+
+    typedef enum { kLights, kCamera, kAction, kSpinUp, kShoot1, kShoot2, kShoot3, kDone } FireControl;
+
+    void Start( Target::TargetID targetID, FireControl lastState );
+    void Stop();
+    bool Run();
+
 private:
     // pointer to owner
     MyRobot& m_robot;
 
     Target::TargetID m_targetID;
-    Target::TargetLocation targetLocation;
-    enum { kLights, kCamera, kAction, kShooting, kNoTarget } fireControl;
-    Timer turnTimer;
+    Target::TargetLocation m_targetLocation;
 
+    static const char *StateName( FireControl state );
+
+    void ShootCommand::EnterState( FireControl newState );
+
+    FireControl m_fireControl, m_lastState;
+    Timer m_timer;
+
+    static const float cameraWarmup;
+    static const float turnTimeout;
     static const float aimTolerance;
-
-public:
-    ShootCommand( MyRobot& theRobot );
-
-    void Start();
-    void Stop();
-    bool Run();
 };
 
 #endif // _MYROBOT_H_

@@ -107,7 +107,7 @@ bool DriveCommand::Run()
     switch (oi.Shooter()) {
     case 2:	// up, start
 	if (!m_robot.shooter.IsRunning()) {
-	    m_robot.target.StartAcquisition();
+	    m_robot.shooter.SetManual();
 	    m_robot.shooter.Start();
 	}
 	break;
@@ -117,67 +117,8 @@ bool DriveCommand::Run()
 	m_robot.shooter.Stop();
 	break;
     }
+
     if (m_robot.shooter.IsRunning()) {
-#if SHOOTER_ASSIST
-	int height = oi.Extra();
-	if (m_robot.target.ProcessingComplete()) {
-	    bool targetsFound = m_robot.target.TargetsFound();
-	    if (targetsFound) {
-		Target::TargetLocation targetLocation;
-		switch (height) {
-		case 0:
-		    targetLocation = m_robot.target.GetTargetLocation(Target::kBottom);
-		    break;
-		case 1:
-		    Target::TargetLocation targetLeft =
-			m_robot.target.GetTargetLocation(Target::kLeft);
-		    Target::TargetLocation targetRight =
-			m_robot.target.GetTargetLocation(Target::kRight);
-
-		    if (targetLeft.valid) {
-			if (targetRight.valid) {
-			    // if both are in view, pick the target that's closest to center
-			    targetLocation = (fabs(targetLeft.angle) < fabs(targetRight.angle)) 
-					    ? targetLeft : targetRight;
-			} else {
-			    // pick the valid target
-			    targetLocation = targetLeft;
-			}
-		    } else {
-			// either left is not valid and right is: pick right
-			// or neither one is valid: pick either one
-			targetLocation = targetRight;
-		    }
-		    break;
-
-		case 2:
-		    targetLocation = m_robot.target.GetTargetLocation(Target::kTop);
-		    break;
-		}
-		SmartDashboard::Log(
-		    (targetLocation.id == Target::kTop) ? "top" :
-		    (targetLocation.id == Target::kLeft) ? "left" :
-		    (targetLocation.id == Target::kRight) ? "right" : "bottom", "target");
-		SmartDashboard::Log(targetLocation.valid,    "target.valid");
-		SmartDashboard::Log(targetLocation.distance, "target.distance");
-		SmartDashboard::Log(targetLocation.angle,    "target.angle");
-		if (targetLocation.valid) {
-		    float speed = Shooter::Ballistics(targetLocation.height, targetLocation.distance);
-		    SmartDashboard::Log(speed, "target.speed");
-		}
-	    } else {
-		SmartDashboard::Log("",    "target");
-		SmartDashboard::Log(false, "target.valid");
-		SmartDashboard::Log("",    "target.distance");
-		SmartDashboard::Log("",    "target.angle");
-		SmartDashboard::Log("",    "target.speed");
-	    }
-	    m_robot.target.StartAcquisition();
-	}
-#endif // SHOOTER_ASSIST
-
-	float speed = 0.300 + (oi.Adjust() * 0.650);
-	m_robot.shooter.SetSpeed(speed);
 	oi.ReadyLED(m_robot.shooter.IsReady());
 
 	// This will repeat fire if the button is held down.

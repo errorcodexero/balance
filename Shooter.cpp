@@ -6,6 +6,7 @@
 #include "xGearTooth.h"
 #include "xPIDController.h"
 #include "Shooter.h"
+#include "MyRobot.h"
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
@@ -22,13 +23,14 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
 #define	ADJUST		4.0F	// speed adjustment range (%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
-#define	MOTOR_START	0.2F	// time to wait before encoder output is valid
+#define	MOTOR_START	0.5F	// time to wait before encoder output is valid
 #define SHOT_TIME	0.8F	// time to cycle injector up
 #define RELEASE_TIME	1.4F	// time to cycle injector down
 
-Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
+Shooter::Shooter( MyRobot& theRobot, int bottom_motor_channel, int top_motor_channel,
 		  int bottom_geartooth_channel, int top_geartooth_channel,
 		  int injector_channel ) :
+    m_robot(theRobot),
     motor_bottom(bottom_motor_channel),
     motor_top(top_motor_channel),
     geartooth_bottom(bottom_geartooth_channel),
@@ -38,6 +40,7 @@ Shooter::Shooter( int bottom_motor_channel, int top_motor_channel,
     tolerance(TOLERANCE), shot_time(SHOT_TIME), release_time(RELEASE_TIME),
     pid_bottom( pid_p, pid_i, pid_d, &geartooth_bottom, &motor_bottom ),
     pid_top( pid_p, pid_i, pid_d, &geartooth_top, &motor_top ),
+    m_auto(false), m_speed(0.0F),
     speed_bottom(0.0F), speed_top(0.0F),
     running(false),
     shooting(kIdle)
@@ -138,8 +141,6 @@ void Shooter::InitShooter()
 
     motor_timer.Start();
     shot_timer.Start();
-
-    Log();
 }
 
 void Shooter::Log()
@@ -149,12 +150,13 @@ void Shooter::Log()
 
     if (IsRunning()) {
 	if (++logCount >= 20) {
+	    SmartDashboard::Log(m_speed, "set speed");
 	    SmartDashboard::Log(speed_bottom, "b set");
 	    SmartDashboard::Log(pid_bottom.GetInput(), "b spd");
-	    // SmartDashboard::Log(pid_bottom.GetError(), "b err");
+	    SmartDashboard::Log(pid_bottom.GetError(), "b err");
 	    SmartDashboard::Log(speed_top, "t set");
 	    SmartDashboard::Log(pid_top.GetInput(), "t spd");
-	    // SmartDashboard::Log(pid_top.GetError(), "t err");
+	    SmartDashboard::Log(pid_top.GetError(), "t err");
 	    SmartDashboard::Log(IsReady(), "shooter");
 	    logCount = 0;
 	}
@@ -163,20 +165,13 @@ void Shooter::Log()
     }
 #endif
 
-    char msg[16];
-    snprintf(msg, sizeof msg, "b speed %6.0f", speed_bottom);
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
-    lcd->PrintfLine(DriverStationLCD::kUser_Line3, msg);
+    if (IsRunning()) {
+	lcd->PrintfLine(DriverStationLCD::kUser_Line3, "shooter %6.0f", speed_bottom);
+    } else {
+	lcd->PrintfLine(DriverStationLCD::kUser_Line3, "shooter stopped");
+    }
     lcd->UpdateLCD();
-
-}
-
-void Shooter::SetSpeed( float speed )
-{
-    speed_bottom = speed * MAX_PPS;
-    pid_bottom.SetSetpoint( speed_bottom );
-    speed_top = speed_bottom * drive_ratio;
-    pid_top.SetSetpoint( speed_top );
 }
 
 float Shooter::Ballistics( int height, float distance )
@@ -208,20 +203,38 @@ float Shooter::Ballistics( int height, float distance )
     return coeff[0] + distance * (coeff[1] + (distance * coeff[2]));
 }
 
-
-void Shooter::SetTarget( int height, float distance, float adjust )
+void Shooter::UpdateSpeed()
 {
-    float speed = Ballistics(height, distance) * (1.0 + adjust * ADJUST / 100.0F);
+    float adjust = m_robot.GetOI().Adjust();
 
-    printf("Shooter height %d distance %g adjust %g speed %g\n",
-    		height, distance, adjust, speed);
-
-    speed_bottom = speed;
-    pid_bottom.SetSetpoint( speed_bottom );
+    if (m_auto) {
+	// adjust is a +/-ADJUST% adjustment to base m_speed
+	speed_bottom = m_speed * ((adjust * 2.0 - 1.0) * ADJUST / 100.);
+    } else {
+	// ignore m_speed; adjust is 30..95% of max speed
+	speed_bottom = (0.300 + (adjust * 0.650)) * MAX_PPS;
+    }
     speed_top = speed_bottom * drive_ratio;
+    pid_bottom.SetSetpoint( speed_bottom );
     pid_top.SetSetpoint( speed_top );
+}
 
-    Log();
+void Shooter::SetManual()
+{
+    m_auto = false;
+    m_speed = 0.;
+    UpdateSpeed();
+}
+
+void Shooter::SetTarget( int height, float distance )
+{
+    m_auto = true;
+    m_speed = Ballistics(height, distance);
+    if (m_robot.GetOI().Teach()) {
+	printf("SetTarget height %d distance %g speed %g\n",
+		    height, distance, m_speed);
+    }
+    UpdateSpeed();
 }
 
 void Shooter::Start()
@@ -240,7 +253,6 @@ void Shooter::Start()
     running = true;
 
     Run();
-    Log();
 }
 
 void Shooter::Stop()
@@ -279,8 +291,7 @@ void Shooter::Reset()
 void Shooter::Run()
 {
     if (IsRunning()) {
-	pid_bottom.SetSetpoint( speed_bottom );
-	pid_top.SetSetpoint( speed_top );
+	UpdateSpeed();
     }
     Log();
 
@@ -300,16 +311,6 @@ void Shooter::Run()
 	}
 	break;
     }
-}
-
-bool Shooter::IsRunning()
-{
-    return (running);
-}
-
-bool Shooter::IsShooting()
-{
-    return (shooting != kIdle);
 }
 
 bool Shooter::IsReady()

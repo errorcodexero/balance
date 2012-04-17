@@ -9,140 +9,207 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+const float ShootCommand::cameraWarmup = 1.50;
+const float ShootCommand::turnTimeout = 1.00;
 const float ShootCommand::aimTolerance = 0.50;
+
+const char *ShootCommand::StateName( FireControl state )
+{
+    const char *stateName;
+
+    switch( state ) {
+    case kLights:
+	stateName = "lights";
+	break;
+    case kCamera:
+	stateName = "camera";
+	break;
+    case kAction:
+	stateName = "action";
+	break;
+    case kSpinUp:
+	stateName = "spin up";
+	break;
+    case kShoot1:
+	stateName = "shoot 1";
+	break;
+    case kShoot2:
+	stateName = "shoot 2";
+	break;
+    case kShoot3:
+	stateName = "shoot 3";
+	break;
+    case kDone:
+    default:
+	stateName = "done";
+	break;
+    }
+
+    return stateName;
+}
 
 ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
-    turnTimer.Start();
+    m_timer.Start();
 }
 
-void ShootCommand::Start()
+void ShootCommand::Start( Target::TargetID targetID, FireControl lastState )
 {
-    OI& oi = m_robot.GetOI();
-    const char *targetName;
+    printf("Starting targeting sequence: %s %s\n",
+	Target::TargetName(targetID), StateName(lastState));
 
-    if (oi.TargetTop()) {
-	m_targetID = Target::kTop;
-	targetName = "top";
-    } else if (oi.TargetLeft()) {
-	m_targetID = Target::kLeft;
-	targetName = "left";
-    } else if (oi.TargetRight()) {
-	m_targetID = Target::kRight;
-	targetName = "right";
-    } else if (oi.TargetBottom()) {
-	m_targetID = Target::kBottom;
-	targetName = "bottom";
-    } else {
-	// shooter started without a target
-	m_targetID = Target::kCenter;
-	targetName = "center";
-    }
+    m_targetID = targetID;
+    m_lastState = lastState;
+    m_fireControl = kDone;
 
-    printf("Starting targeting sequence: %s\n", targetName);
-
-    m_robot.DisableMotors();
-    m_robot.illuminator.Set( Relay::kOn );
-    turnTimer.Reset();
-    fireControl = kLights;
-    MyRobot::ShowState("Shoot", "Lights");
+    EnterState(kLights);
 }
 
 void ShootCommand::Stop()
 {
+    OI& oi = m_robot.GetOI();
+
+    // disable drive motors
     m_robot.DisableMotors();
-    m_robot.shooter.Stop();
+    // return illuminator to manual control
+    m_robot.illuminator.Set( oi.Illuminator() ? Relay::kOn : Relay::kOff );
+    // but leave the shooter running...
+}
+
+void ShootCommand::EnterState( FireControl newState )
+{
+    OI& oi = m_robot.GetOI();
+
+    // short circuit state progression when we try to leave "lastState"
+    if (m_fireControl == m_lastState) {
+	newState = kDone;
+    }
+
+    switch (newState) {
+    case kLights:
+	m_robot.illuminator.Set( Relay::kOn );
+	break;
+
+    case kCamera:
+	m_robot.target.StartAcquisition();
+	break;
+
+    case kAction:
+	m_robot.EnablePositionControl();
+	break;
+
+    case kSpinUp:
+	// return illuminator to manual control
+	m_robot.illuminator.Set( oi.Illuminator() ? Relay::kOn : Relay::kOff );
+	m_robot.shooter.SetTarget( m_targetLocation.height, m_targetLocation.distance );
+	m_robot.shooter.Start();
+	break;
+
+    case kShoot1:
+    case kShoot2:
+    case kShoot3:
+	m_robot.shooter.Shoot();
+	break;
+
+    case kDone:
+	break;
+
+    }
+    MyRobot::ShowState("Shoot", StateName(newState));
+    m_fireControl = newState;
+    m_timer.Reset();
 }
 
 bool ShootCommand::Run()
 {
-    switch (fireControl) {
+    OI& oi = m_robot.GetOI();
+
+    switch (m_fireControl) {
     case kLights:
-	// wait a while for the camera to adjust to the lighting change
-	if (turnTimer.Get() > 1.5) {
-	    m_robot.target.StartAcquisition();
-	    fireControl = kCamera;
-	    MyRobot::ShowState("Shoot", "Camera");
+	// must wait a while for the camera to adjust to the lighting change
+	if (m_timer.Get() > cameraWarmup) {
+	    EnterState(kCamera);
 	}
 	break;
+
     case kCamera:
 	if (m_robot.target.ProcessingComplete()) {
-	    printf("Target image processing complete\n");
 	    bool targetsFound = m_robot.target.TargetsFound();
+	    if (oi.Teach()) {
+		printf("Target image processing complete\n");
+	    }
 	    if (targetsFound) {
-		printf("Targets found\n");
-		targetLocation = m_robot.target.GetTargetLocation(m_targetID);
-		// are we already on target?
-		OI& oi = m_robot.GetOI();
-		if (oi.Extra() == 0) {
-		    // camera only - no motion
-		    printf("Targeting location: visible %d, angle %g, distance %g\n",
-			targetLocation.valid, targetLocation.angle, targetLocation.distance);
-		    m_robot.illuminator.Set( Relay::kOff );  // no more pictures
-		    fireControl = kNoTarget;
-		    MyRobot::ShowState("Shoot", "Complete");
-		} else if (targetLocation.valid && (fabs(targetLocation.angle) < aimTolerance)) {
-		    printf("Aiming complete: angle %g, distance %g\n",
-			targetLocation.angle, targetLocation.distance);
-		    m_robot.illuminator.Set( Relay::kOff );  // no more pictures
-		    if (oi.Extra() == 1 || targetLocation.id == Target::kCenter) {
-			// If we're aimed at the center of the target array, just stop here.
-			fireControl = kNoTarget;
-			MyRobot::ShowState("Shoot", "Complete");
-		    } else {
-			// Start the shooter.
-			// TBD: change adjustment scaling?
-			printf("Starting shooter...\n");
-			m_robot.shooter.SetTarget(targetLocation.height,
-				targetLocation.distance, (oi.Adjust()-0.5)*2.);
-			m_robot.shooter.Start();
-			fireControl = kShooting;
-			MyRobot::ShowState("Shoot", "Shooting");
-		    }
+		m_targetLocation = m_robot.target.GetTargetLocation(m_targetID);
+		if (oi.Teach()) {
+		    printf("Target \"%s\" center visible %d, angle %g, distance %g\n",
+			Target::TargetName(m_targetLocation.id),
+			m_targetLocation.valid,
+			m_targetLocation.angle,
+			m_targetLocation.distance);
+		}
+		if (m_targetLocation.valid && (fabs(m_targetLocation.angle) < aimTolerance)) {
+		    EnterState(kSpinUp);
 		} else {
-		    printf("Starting turn: %g degrees\n", targetLocation.angle);
-		    m_robot.EnablePositionControl();
-		    turnTimer.Reset();
-		    fireControl = kAction;
-		    MyRobot::ShowState("Shoot", "Action");
+		    EnterState(kAction);
 		}
 	    } else {
-		printf("No targets visible\n");
-		fireControl = kNoTarget;
-		MyRobot::ShowState("Shoot", "No Targets");
+		if (oi.Teach()) {
+		    printf("No targets visible\n");
+		}
+		// Stop here.  Avoid using EnterState because we want to leave "no targets"
+		// on the driver station display as opposed to the default "done".
+		m_fireControl = kDone;
+		MyRobot::ShowState("Shoot", "no targets");
 	    }
 	}
 	break;
 
     case kAction:
-	bool turnComplete = m_robot.TurnToAngle(targetLocation.angle);
-	if (turnComplete || turnTimer.Get() > 2.0) {
-	    printf("Target turn %s: %g %g %g\n",
-	      turnComplete ? "complete" : "TIMEOUT", targetLocation.angle,
-	      m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
-	      m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
+	bool turnComplete = m_robot.TurnToAngle(m_targetLocation.angle);
+	if (turnComplete || (m_timer.Get() > turnTimeout)) {
+	    if (oi.Teach()) {
+		printf("Auto turn %s: m_angle %g left %g right %g\n",
+		   turnComplete ? "complete" : "TIMEOUT", m_targetLocation.angle,
+		   m_robot.GetJaguarAngle(m_robot.motor_left,"left"),
+		   m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
+	    }
 	    m_robot.DisableMotors();
-
-	    printf("Taking another picture...\n");
-	    // More of the target should be in view now.
-	    // Take another picture and reposition.
-	    m_robot.target.StartAcquisition();
-	    fireControl = kCamera;
-	    MyRobot::ShowState("Shoot", "Camera");
+	    // Take another picture and check position.
+	    EnterState(kCamera);
 	}
 	break;
 
-    case kShooting:
-	// Here's where a "ball ready" sensor would be helpful.
-	if (m_robot.shooter.IsReady()) {
-	    m_robot.shooter.Shoot();
-	}
+    case kSpinUp:
 	m_robot.shooter.Run();
+	if (m_robot.shooter.IsReady()) {
+	    EnterState(kShoot1);
+	}
 	break;
 
-    case kNoTarget:
-	break;	// stay in this state until gunner releases button
+    case kShoot1:
+	m_robot.shooter.Run();
+	if (m_robot.shooter.IsReady()) {
+	    EnterState(kShoot2);
+	}
+	break;
+
+    case kShoot2:
+	m_robot.shooter.Run();
+	if (m_robot.shooter.IsReady()) {
+	    EnterState(kShoot3);
+	}
+	break;
+
+    case kShoot3:
+	m_robot.shooter.Run();
+	if (m_robot.shooter.IsReady()) {
+	    EnterState(kDone);
+	}
+	break;
+
+    case kDone:
+	break;  // stay in this state
     }
 
-    return true;	// allow interruption at any point
+    return (m_fireControl == kDone);
 }

@@ -92,7 +92,7 @@ void AutoCommand::Start()
     m_robot.DisableMotors();
     m_robot.shooter.InitShooter();
     printf("Starting shooter, distance = %g\n", shotDistance);
-    m_robot.shooter.SetTarget(2, shotDistance, 0.);
+    m_robot.shooter.SetTarget(2, shotDistance);
     m_robot.shooter.Start();
     MyRobot::ShowState("Autonomous", "Shoot");
     shotCount = 0;

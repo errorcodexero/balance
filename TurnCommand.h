@@ -16,13 +16,14 @@ private:
 
     float m_angle;
     Timer m_turnTimer;
-    bool m_turnDebug;
     bool m_turnComplete;
+
+    static const float turnTimeout;
 
 public:
     TurnCommand( MyRobot& theRobot );
 
-    void Start();
+    void Start( float angle );
     void Stop();
     bool Run();
 };

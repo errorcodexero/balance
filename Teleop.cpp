@@ -15,29 +15,40 @@ void MyRobot::TeleopInit()
     m_autoCommand.Stop();
     shooter.InitShooter();
 
-    driveMode = kManual;
+    m_driveMode = kManual;
     m_driveCommand.Start();
 }
 
 void MyRobot::TeleopPeriodic()
 {
     OI& oi = GetOI();
-    DriveMode newMode;
-    bool buttonDown;
+    DriveMode newMode = m_driveMode;
+    bool buttonDown = false;
+    double turnAngle = 0.;
 
-    if (oi.TurnLeft10() || oi.TurnRight10() || oi.TurnLeft3() || oi.TurnRight3()) {
+    if (oi.TurnLeft10()) {
 	buttonDown = true;
 	newMode = kTurn;
-    } else if (oi.TargetTop() || oi.TargetLeft() || oi.TargetRight() || oi.TargetBottom()) {
+	turnAngle = -10.;
+    } else if (oi.TurnRight10()) {
+	buttonDown = true;
+	newMode = kTurn;
+	turnAngle = 10.;
+    } else if (oi.TurnLeft3()) {
+	buttonDown = true;
+	newMode = kTurn;
+	turnAngle = -3.;
+    } else if (oi.TurnRight3()) {
+	buttonDown = true;
+	newMode = kTurn;
+	turnAngle = 3.;
+    } else if (oi.TurnAuto()) {
 	buttonDown = true;
 	newMode = kShoot;
-    } else {
-	buttonDown = false;
-	newMode = driveMode;
     }
 
-    if (driveMode != newMode) {
-	switch (driveMode) {
+    if (newMode != m_driveMode) {
+	switch (m_driveMode) {
 	case kManual:
 	    m_driveCommand.Stop();
 	    break;
@@ -54,18 +65,18 @@ void MyRobot::TeleopPeriodic()
 	    m_driveCommand.Start();
 	    break;
 	case kTurn:
-	    m_turnCommand.Start();
+	    m_turnCommand.Start(turnAngle);
 	    break;
 	case kShoot:
-	    m_shootCommand.Start();
+	    m_shootCommand.Start(Target::kTop, ShootCommand::kSpinUp);
 	    break;
 	}
 
-	driveMode = newMode;
+	m_driveMode = newMode;
     }
 
     bool done = false;
-    switch (driveMode) {
+    switch (m_driveMode) {
     case kManual:
 	done = m_driveCommand.Run();
 	break;
@@ -78,8 +89,8 @@ void MyRobot::TeleopPeriodic()
     }
 
     if (done && !buttonDown) {
-	// stop this mode
-	switch (driveMode) {
+	// button released, stop this mode
+	switch (m_driveMode) {
 	case kManual:
 	    m_driveCommand.Stop();
 	    break;
@@ -93,7 +104,7 @@ void MyRobot::TeleopPeriodic()
 
 	// return to manual control
 	m_driveCommand.Start();
-	driveMode = kManual;
+	m_driveMode = kManual;
     }
 }
 

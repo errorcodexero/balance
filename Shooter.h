@@ -9,9 +9,13 @@
 #include "xGearTooth.h"
 #include "xPIDController.h"
 
+class MyRobot;
+
 class Shooter
 {
 private:
+    MyRobot& m_robot;
+
     /*PIDOutput*/ Victor motor_bottom;
     /*PIDOutput*/ Victor motor_top;
     /*PIDSource*/ xGearTooth geartooth_bottom;
@@ -32,15 +36,16 @@ private:
     Timer shot_timer;
 
     // runtime state
+    bool m_auto;
+    float m_speed;
     float speed_bottom, speed_top;
     bool running;
     enum { kIdle, kShooting, kResetting } shooting;
 
-    // operator control panel
-
+    void UpdateSpeed();			// update motor speed
 
 public:
-    Shooter( int bottom_motor_channel, int top_motor_channel,
+    Shooter( MyRobot& theRobot, int bottom_motor_channel, int top_motor_channel,
     	     int bottom_geartooth_channel, int top_geartooth_channel,
 	     int injector_channel );
     ~Shooter();
@@ -50,18 +55,16 @@ public:
 
     static float Ballistics( int target_height, float distance );
 
-    void SetTarget( int height, float distance, float adjust );
-    void SetSpeed( float speed );	// set motor speed
+    void SetManual();			// set speed directly from OI
+    void SetTarget( int height, float distance );  // set speed from height/distance
     void Start();			// start the motors
+    void Run();				// update motor and injector status
     void Stop();			// stop the motors
-
     void Shoot();			// shoot a ball
     void Reset();			// reset injector for next shot
 
-    void Run();				// update motor and injector status
-
-    bool IsRunning();
-    bool IsShooting();
+    bool IsRunning() { return (running); };
+    bool IsShooting() { return (shooting != kIdle); };
     bool IsReady();
 };
 

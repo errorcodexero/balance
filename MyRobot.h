@@ -94,8 +94,8 @@ private:
     ShootCommand m_shootCommand;
 
     typedef enum { kManual, kTurn, kShoot } DriveMode;
-    DriveMode driveMode;
-    long driveTime;	// in milliseconds
+    DriveMode m_driveMode;
+    long m_driveTime;	// in milliseconds
 
     double m_driveTolerance;
     double m_turnTolerance;
@@ -127,7 +127,7 @@ public:
     bool DriveToPosition( float distance );
     bool TurnToAngle( float angle );
 
-    static void ShowState( char *mode, char *state );
+    static void ShowState( const char *mode, const char *state );
 
     virtual void RobotInit();
 

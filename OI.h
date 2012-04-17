@@ -27,32 +27,33 @@ public:
     float GetLeftTwist()	{ return joy_left.GetTwist(); }
     float GetLeftThrottle()	{ return joy_left.GetThrottle(); }
     bool  GetLeftTrigger()	{ return joy_left.GetTrigger(); }
-    bool  GetLeftTop()		{ return joy_right.GetTrigger(); }
+    bool  GetLeftTop()		{ return joy_left.GetTop(); }
 
     float GetRightY()		{ return joy_right.GetY(); }
     float GetRightX()		{ return joy_right.GetX(); }
     float GetRightTwist()	{ return joy_right.GetTwist(); }
     float GetRightThrottle()	{ return joy_right.GetThrottle(); }
     bool  GetRightTrigger()	{ return joy_right.GetTrigger(); }
-    bool  GetRightTop()		{ return joy_right.GetTrigger(); }
+    bool  GetRightTop()		{ return joy_right.GetTop(); }
 
-    bool Brake()		{ return joy_right.GetRawButton(2); }
+    bool TurnAuto()		{ return joy_right.GetRawButton(2); }
     bool TurnLeft10()		{ return joy_right.GetRawButton(3); }
     bool TurnRight10()		{ return joy_right.GetRawButton(4); }
     bool TurnLeft3()		{ return joy_right.GetRawButton(5); }
     bool TurnRight3()		{ return joy_right.GetRawButton(6); }
+    bool Brake()		{ return joy_right.GetRawButton(7); }
 
-    // 3-position switch, ball pickup
+    // 3-position switch (0,1,2), ball pickup
     int   BallPickup()		{ return (int)(pIO->GetAnalogInRatio(1) * 2.0 + 0.5); }
-    // 3-position switch, cowcatcher
+    // 3-position switch (0,1,2), cowcatcher
     int   Cowcatcher()		{ return (int)(pIO->GetAnalogInRatio(2) * 2.0 + 0.5); }
-    // potentiometer, shot speed
+    // potentiometer (0..1), shot speed adjust
     float Adjust()		{ return pIO->GetAnalogInRatio(3); }
-    // 3-position switch, shooter
+    // 3-position switch (0,1,2), shooter
     int   Shooter()		{ return (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5); }
-    // 3-position switch, unused
+    // 3-position switch (0,1,2), unused
     int   Extra()		{ return (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5); }
-    // 3-position switch, tipper
+    // 3-position switch (0,1,2), tipper (ram control)
     int   Tipper()		{ return (int)(pIO->GetAnalogInRatio(6) * 2.0 + 0.5); }
 
     // pushbutton, fire control
