@@ -47,9 +47,9 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	SPEED_D		0.001
 #define	DRIVE_TOLERANCE	0.50
 
-#define	POSITION_P	2400.
-#define	POSITION_I	0.005
-#define	POSITION_D	0.001
+#define	POSITION_P	6000.
+#define	POSITION_I	5.000
+#define	POSITION_D	0.500
 #define	TURN_TOLERANCE	0.35
 
 MyRobot::MyRobot() :

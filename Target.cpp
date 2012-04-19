@@ -2,7 +2,6 @@
 // Steve Tarr - team 1425 mentor
 
 #include <WPILib.h>
-#include "xAxisCamera.h"
 #include <math.h>
 #include "Target.h"
 #include "Version.h"
@@ -42,6 +41,7 @@ void Target::TargetProcess( Target *t )
 }
 
 Target::Target() :
+    m_camera(AxisCamera::GetInstance()),
     m_task( "TargetProcess", (FUNCPTR)TargetProcess )
 {
     memset(m_falseColor, 0, sizeof(m_falseColor));
@@ -342,12 +342,11 @@ bool Target::GetImage()
     printf("Target::GetImage\n");
     long then = (long) GetFPGATime();
 
-    xAxisCamera& axisCamera = xAxisCamera::GetInstance();
-    if (!axisCamera.IsFreshImage()) {
+    if (!m_camera.IsFreshImage()) {
 	return false;
     }
     printf("Target::GetImage - got fresh image\n");
-    if (!axisCamera.GetImage(&m_cameraImage)) {
+    if (!m_camera.GetImage(&m_cameraImage)) {
 	printf("%s: image acquisition FAILED\n", __FUNCTION__);
 	return false;
     }

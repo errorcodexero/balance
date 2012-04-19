@@ -21,7 +21,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 #define	SHOOTER_I	0.001F
 #define	SHOOTER_D	0.000F
 #define	DRIVE_RATIO	0.70F	// empirical value, provides some backspin
-#define	ADJUST		4.0F	// speed adjustment range (%)
+#define	ADJUST		0.04F	// speed adjustment range (+/-4%)
 #define	TOLERANCE	3.0F	// speed tolerance (%)
 #define	MOTOR_START	0.5F	// time to wait before encoder output is valid
 #define SHOT_TIME	0.8F	// time to cycle injector up
@@ -217,7 +217,7 @@ void Shooter::UpdateSpeed()
 
     if (m_auto) {
 	// adjust is a +/-ADJUST% adjustment to base m_speed
-	speed_bottom = m_speed * ((adjust * 2.0 - 1.0) * ADJUST / 100.);
+	speed_bottom = m_speed * (1.0 + ((adjust * 2.0 - 1.0) * ADJUST));
     } else {
 	// ignore m_speed; adjust is 30..95% of max speed
 	speed_bottom = (0.300 + (adjust * 0.650)) * MAX_PPS;
@@ -229,6 +229,7 @@ void Shooter::UpdateSpeed()
 
 void Shooter::SetManual()
 {
+    printf("Shooter::SetManual\n");
     m_auto = false;
     m_speed = 0.;
     UpdateSpeed();
@@ -236,6 +237,7 @@ void Shooter::SetManual()
 
 void Shooter::SetTarget( int height, float distance )
 {
+    printf("Shooter::SetTarget %d %g\n", height, distance);
     m_auto = true;
     m_speed = Ballistics(height, distance);
     if (m_robot.GetOI().Teach()) {

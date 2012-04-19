@@ -45,6 +45,9 @@ public:
     };
 
 private:
+    // Reference to the (singleton) Axis camera.
+    AxisCamera& m_camera;
+
     // Target calculations take a long time,
     // so we run them in a background task.
     Task m_task;

@@ -10,7 +10,7 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 const float ShootCommand::cameraWarmup = 1.50;
-const float ShootCommand::turnTimeout = 1.00;
+const float ShootCommand::turnTimeout  = 1.00;
 const float ShootCommand::aimTolerance = 0.50;
 
 const char *ShootCommand::StateName( FireControl state )
