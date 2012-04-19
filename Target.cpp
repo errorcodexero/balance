@@ -35,9 +35,9 @@ const char *Target::TargetName( TargetID id )
     return targetName;
 }
 
-
 void Target::TargetProcess( Target *t )
 {
+    printf("Target::TargetProcess started\n");
     t->Run();
 }
 
@@ -284,8 +284,10 @@ Target::TargetLocation Target::GetTargetLocation( TargetID which )
 
 void Target::Run()
 {
+    printf("Target::Run running...\n");
     while (1) {
 	if (m_newImage && GetImage()) {
+	    printf("Target::Run got image\n");
 	    m_pTop = m_pBottom = m_pLeft = m_pRight = NULL;
 	    m_leftX = m_rightX = -1;
 	    bool result = FindParticles() && AnalyzeParticles();
@@ -337,13 +339,14 @@ void Target::Run()
 
 bool Target::GetImage()
 {
-//  printf("Target::GetImage\n");
+    printf("Target::GetImage\n");
     long then = (long) GetFPGATime();
 
     xAxisCamera& axisCamera = xAxisCamera::GetInstance();
     if (!axisCamera.IsFreshImage()) {
 	return false;
     }
+    printf("Target::GetImage - got fresh image\n");
     if (!axisCamera.GetImage(&m_cameraImage)) {
 	printf("%s: image acquisition FAILED\n", __FUNCTION__);
 	return false;

@@ -167,9 +167,17 @@ void Shooter::Log()
 
     DriverStationLCD *lcd = DriverStationLCD::GetInstance();
     if (IsRunning()) {
-	lcd->PrintfLine(DriverStationLCD::kUser_Line3, "shooter %6.0f", speed_bottom);
+	lcd->PrintfLine(DriverStationLCD::kUser_Line3,
+	    "t %6.0f %6.0f",
+	    speed_top, pid_top.GetInput());
+	lcd->PrintfLine(DriverStationLCD::kUser_Line4,
+	    "b %6.0f %6.0f",
+	    speed_bottom, pid_bottom.GetInput());
     } else {
-	lcd->PrintfLine(DriverStationLCD::kUser_Line3, "shooter stopped");
+	lcd->PrintfLine(DriverStationLCD::kUser_Line3,
+	    "t stopped");
+	lcd->PrintfLine(DriverStationLCD::kUser_Line4,
+	    "b stopped");
     }
     lcd->UpdateLCD();
 }

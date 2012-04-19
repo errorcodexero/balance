@@ -55,7 +55,7 @@ ShootCommand::ShootCommand( MyRobot& theRobot ) : m_robot(theRobot)
 
 void ShootCommand::Start( Target::TargetID targetID, FireControl lastState )
 {
-    printf("Starting targeting sequence: %s %s\n",
+    printf("Starting targeting sequence: %s target, end at %s\n",
 	Target::TargetName(targetID), StateName(lastState));
 
     m_targetID = targetID;
@@ -79,6 +79,8 @@ void ShootCommand::Stop()
 void ShootCommand::EnterState( FireControl newState )
 {
     OI& oi = m_robot.GetOI();
+
+    printf("EnterState: newState %s\n", StateName(newState));
 
     // short circuit state progression when we try to leave "lastState"
     if (m_fireControl == m_lastState) {
@@ -211,5 +213,5 @@ bool ShootCommand::Run()
 	break;  // stay in this state
     }
 
-    return (m_fireControl == kDone);
+    return ((m_fireControl == kDone) || (oi.Shooter() == 0));
 }

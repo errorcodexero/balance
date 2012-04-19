@@ -163,7 +163,7 @@ void MyRobot::ShowState( const char *mode, const char *state )
     lcd->PrintfLine(DriverStationLCD::kUser_Line2, state);
     lcd->UpdateLCD();
 
-    SmartDashboard::Log(state, "Robot State");
+//  SmartDashboard::Log(state, "Robot State");
 }
 
 void MyRobot::DisableMotor( xCANJaguar& motor )
