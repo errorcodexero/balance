@@ -23,28 +23,57 @@ void MyRobot::TeleopPeriodic()
 {
     OI& oi = GetOI();
     DriveMode newMode = m_driveMode;
-    bool buttonDown = false;
+    bool driverButtonDown = false;
+    bool gunnerButtonDown = false;
     double turnAngle = 0.;
+    Target::TargetID targetID = Target::kCenter;
+    ShootCommand::FireControl shootControl = ShootCommand::kDone;
+
+    // Check the gunner controls, then the driver controls.
+    // That gives the driver priority if they're both holding buttons down.
+    if (oi.TargetTop()) {
+	gunnerButtonDown = true;
+	newMode = kShoot;
+	targetID = Target::kTop;
+	shootControl = ShootCommand::kDone;
+    } else if (oi.TargetLeft()) {
+	gunnerButtonDown = true;
+	newMode = kShoot;
+	targetID = Target::kLeft;
+	shootControl = ShootCommand::kDone;
+    } else if (oi.TargetRight()) {
+	gunnerButtonDown = true;
+	newMode = kShoot;
+	targetID = Target::kRight;
+	shootControl = ShootCommand::kDone;
+    } else if (oi.TargetBottom()) {
+	gunnerButtonDown = true;
+	newMode = kShoot;
+	targetID = Target::kTop;
+	shootControl = ShootCommand::kSpinUp;
+    }
 
     if (oi.TurnLeft10()) {
-	buttonDown = true;
+	driverButtonDown = true;
 	newMode = kTurn;
 	turnAngle = -10.;
     } else if (oi.TurnRight10()) {
-	buttonDown = true;
+	driverButtonDown = true;
 	newMode = kTurn;
 	turnAngle = 10.;
     } else if (oi.TurnLeft3()) {
-	buttonDown = true;
+	driverButtonDown = true;
 	newMode = kTurn;
 	turnAngle = -3.;
     } else if (oi.TurnRight3()) {
-	buttonDown = true;
+	driverButtonDown = true;
 	newMode = kTurn;
 	turnAngle = 3.;
     } else if (oi.TurnAuto()) {
-	buttonDown = true;
-	newMode = kShoot;
+	driverButtonDown = true;
+	newMode = kAim;
+	targetID = Target::kTop;
+	shootControl = ShootCommand::kSpinUp;
     }
 
     if (newMode != m_driveMode) {
@@ -55,6 +84,7 @@ void MyRobot::TeleopPeriodic()
 	case kTurn:
 	    m_turnCommand.Stop();
 	    break;
+	case kAim:
 	case kShoot:
 	    m_shootCommand.Stop();
 	    break;
@@ -67,8 +97,9 @@ void MyRobot::TeleopPeriodic()
 	case kTurn:
 	    m_turnCommand.Start(turnAngle);
 	    break;
+	case kAim:
 	case kShoot:
-	    m_shootCommand.Start(Target::kTop, ShootCommand::kSpinUp);
+	    m_shootCommand.Start(targetID, shootControl);
 	    break;
 	}
 
@@ -83,13 +114,30 @@ void MyRobot::TeleopPeriodic()
     case kTurn:
 	done = m_turnCommand.Run();
 	break;
+    case kAim:
+	done = m_shootCommand.Run();
+	// special case for driver-initiated aiming:
+	// Allow the driver to interrupt the action
+	// by releasing the button early.
+	if (!driverButtonDown) {
+	    done = true;
+	}
+	break;
+
     case kShoot:
 	done = m_shootCommand.Run();
+	// special case for auto aiming/shooting:
+	// Allow the gunner to interrupt the action
+	// by turning the shooter off.
+	if (oi.Shooter() == 0) {
+	    done = true;
+	}
 	break;
     }
 
-    if (done && !buttonDown) {
-	// button released, stop this mode
+    if (done && !driverButtonDown && !gunnerButtonDown) {
+	// special actions completed and all buttons released:
+	// return to default (manual control) drive mode
 	switch (m_driveMode) {
 	case kManual:
 	    m_driveCommand.Stop();
@@ -97,12 +145,11 @@ void MyRobot::TeleopPeriodic()
 	case kTurn:
 	    m_turnCommand.Stop();
 	    break;
+	case kAim:
 	case kShoot:
 	    m_shootCommand.Stop();
 	    break;
 	}
-
-	// return to manual control
 	m_driveCommand.Start();
 	m_driveMode = kManual;
     }

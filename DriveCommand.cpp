@@ -8,6 +8,8 @@
 #include "Version.h"
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
+#define	DEADZONE 0.035
+
 DriveCommand::DriveCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
 }
@@ -47,6 +49,9 @@ bool DriveCommand::Run()
 
     float rightY = oi.GetRightY();
     float rightT = oi.GetRightTwist();
+
+    if (fabs(rightY) < DEADZONE) rightY = 0.;
+    if (fabs(rightT) < DEADZONE) rightT = 0.;
 
     m_robot.drive.ArcadeDrive( rightY, -rightT / 3.0, false );
 

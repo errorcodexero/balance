@@ -213,5 +213,5 @@ bool ShootCommand::Run()
 	break;  // stay in this state
     }
 
-    return ((m_fireControl == kDone) || (oi.Shooter() == 0));
+    return (m_fireControl == kDone);
 }

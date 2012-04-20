@@ -93,7 +93,7 @@ private:
     TurnCommand  m_turnCommand;
     ShootCommand m_shootCommand;
 
-    typedef enum { kManual, kTurn, kShoot } DriveMode;
+    typedef enum { kManual, kTurn, kAim, kShoot } DriveMode;
     DriveMode m_driveMode;
     long m_driveTime;	// in milliseconds
 
