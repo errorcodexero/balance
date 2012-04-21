@@ -14,7 +14,7 @@ class ShootCommand
 public:
     ShootCommand( MyRobot& theRobot );
 
-    typedef enum { kLights, kCamera, kAction, kSpinUp, kShoot1, kShoot2, kShoot3, kDone } FireControl;
+    typedef enum { kLights, kCamera, kAction, kHold, kSpinUp, kShoot1, kShoot2, kShoot3, kDone } FireControl;
 
     void Start( Target::TargetID targetID, FireControl lastState );
     void Stop();
@@ -36,6 +36,7 @@ private:
 
     static const float cameraWarmup;
     static const float turnTimeout;
+    static const float holdTimeout;
     static const float aimTolerance;
 };
 

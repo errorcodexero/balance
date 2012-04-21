@@ -11,6 +11,7 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 const float ShootCommand::cameraWarmup = 1.50;
 const float ShootCommand::turnTimeout  = 1.00;
+const float ShootCommand::holdTimeout  = 0.50;
 const float ShootCommand::aimTolerance = 0.50;
 
 const char *ShootCommand::StateName( FireControl state )
@@ -26,6 +27,9 @@ const char *ShootCommand::StateName( FireControl state )
 	break;
     case kAction:
 	stateName = "action";
+	break;
+    case kHold:
+	stateName = "hold";
 	break;
     case kSpinUp:
 	stateName = "spin up";
@@ -98,6 +102,9 @@ void ShootCommand::EnterState( FireControl newState )
 
     case kAction:
 	m_robot.EnablePositionControl();
+	break;
+
+    case kHold:
 	break;
 
     case kSpinUp:
@@ -176,6 +183,13 @@ bool ShootCommand::Run()
 		   m_robot.GetJaguarAngle(m_robot.motor_right,"right"));
 	    }
 	    m_robot.DisableMotors();
+	    // Pause to let the robot stabilize
+	    EnterState(kHold);
+	}
+	break;
+
+    case kHold:
+	if (m_timer.Get() > holdTimeout) {
 	    // Take another picture and check position.
 	    EnterState(kCamera);
 	}
