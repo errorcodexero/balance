@@ -51,8 +51,8 @@ public:
     float Adjust()		{ return pIO->GetAnalogInRatio(3); }
     // 3-position switch (0,1,2), shooter
     int   Shooter()		{ return (int)(pIO->GetAnalogInRatio(4) * 2.0 + 0.5); }
-    // 3-position switch (0,1,2), unused
-    int   Extra()		{ return (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5); }
+    // 3-position switch (0,1,2), magic lights
+    int   Magic()		{ return (int)(pIO->GetAnalogInRatio(5) * 2.0 + 0.5); }
     // 3-position switch (0,1,2), tipper (ram control)
     int   Tipper()		{ return (int)(pIO->GetAnalogInRatio(6) * 2.0 + 0.5); }
 

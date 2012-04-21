@@ -62,6 +62,9 @@ private:
     // Camera illuminator on/off
     Relay illuminator;
 
+    // Magic lights on/off
+    Relay magic;
+
     // Bridge support ram
     Solenoid tipper;
 

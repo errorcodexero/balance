@@ -109,6 +109,10 @@ bool DriveCommand::Run()
 
     ////////////////////////////////////////
 
+    m_robot.magic.Set( (oi.Magic() == 2) ? Relay::kOn : Relay::kOff );
+
+    ////////////////////////////////////////
+
     switch (oi.Shooter()) {
     case 2:	// up, start
 	if (!m_robot.shooter.IsRunning()) {

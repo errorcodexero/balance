@@ -32,7 +32,8 @@ static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 // relay (Spike) outputs
 #define	COMPRESSOR_RLY	1
 #define	PICKUP_RLY	2
-#define	ILLUMINATOR_RLY	3
+#define	ILLUMINATOR_RLY	3	// forward direction
+#define	MAGIC_RLY	3	// reverse direction
 
 // solenoid (pneumatic) outputs
 #define	COWCATCHER_SOL	1
@@ -60,6 +61,7 @@ MyRobot::MyRobot() :
     cowcatcher( COWCATCHER_SOL ),
     ball_pickup( PICKUP_RLY, Relay::kBothDirections ),
     illuminator( ILLUMINATOR_RLY, Relay::kForwardOnly ),
+    magic( MAGIC_RLY, Relay::kReverseOnly ),
     tipper( TIPPER_SOL ),
     onRamp( ONRAMP_DIGIN ),
     drive( motor_left, motor_right ),
