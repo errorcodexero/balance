@@ -9,6 +9,7 @@
 static Version v( __FILE__ " " __DATE__ " " __TIME__ );
 
 #define	DEADZONE 0.035
+#define	TWISTY	2.2
 
 DriveCommand::DriveCommand( MyRobot& theRobot ) : m_robot(theRobot)
 {
@@ -53,7 +54,7 @@ bool DriveCommand::Run()
     if (fabs(rightY) < DEADZONE) rightY = 0.;
     if (fabs(rightT) < DEADZONE) rightT = 0.;
 
-    m_robot.drive.ArcadeDrive( rightY, -rightT / 3.0, false );
+    m_robot.drive.ArcadeDrive( rightY, -rightT / TWISTY, false );
 
     ////////////////////////////////////////
 
