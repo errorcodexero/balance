@@ -28,10 +28,14 @@ class MyRobot : public IterativeRobot
 
 private:
     // shaft encoder counts per inch of robot movement
-    static const double driveScale;
+    static double driveScale;
 
     // shaft encoder counts per degree of robot rotation
-    static const double turnScale;
+    static double turnScale;
+
+    // default PID tolerance
+    static double driveTolerance;
+    static double turnTolerance;
 
     ///////////////////////////////////////////////////////////////////
     // driver station
@@ -100,9 +104,6 @@ private:
     DriveMode m_driveMode;
     long m_driveTime;	// in milliseconds
 
-    double m_driveTolerance;
-    double m_turnTolerance;
-
     ///////////////////////////////////////////////////////////////////
     // helper functions
     ///////////////////////////////////////////////////////////////////
@@ -128,7 +129,7 @@ public:
     void EnableSpeedControl();
     void EnablePositionControl();
     bool DriveToPosition( float distance );
-    bool TurnToAngle( float angle );
+    bool TurnToAngle( float angle, float tolerance = (float) turnTolerance );
 
     static void ShowState( const char *mode, const char *state );
 

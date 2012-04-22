@@ -23,6 +23,8 @@ private:
     static const float holdTimeout;
     static const float turnTimeLimit;
     static const float shotTimeLimit;
+    static const float driveScale;
+    static const float largeTurnTolerance;
 
     // pointer to owner
     MyRobot& m_robot;

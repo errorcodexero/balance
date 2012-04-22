@@ -73,9 +73,7 @@ MyRobot::MyRobot() :
     m_turnCommand(*this),
     m_shootCommand(*this),
     m_driveMode(kManual),
-    m_driveTime(0),
-    m_driveTolerance( DRIVE_TOLERANCE ),
-    m_turnTolerance( TURN_TOLERANCE )
+    m_driveTime(0)
 {
     printf("File Versions:\n%s\n", Version::GetVersions());
     RobotInit();
@@ -330,11 +328,11 @@ void MyRobot::EnablePositionControl()
     double d = pref->GetDouble( "Position.D", POSITION_D );
     printf("position_d = %g\n", d);
 
-    m_driveTolerance = pref->GetDouble( "Drive.T", DRIVE_TOLERANCE );
-    printf("drive_t = %g\n", m_driveTolerance);
+    driveTolerance = pref->GetDouble( "Drive.T", DRIVE_TOLERANCE );
+    printf("drive_t = %g\n", driveTolerance);
 
-    m_turnTolerance = pref->GetDouble( "Turn.T", TURN_TOLERANCE );
-    printf("turn_t = %g\n", m_turnTolerance);
+    turnTolerance = pref->GetDouble( "Turn.T", TURN_TOLERANCE );
+    printf("turn_t = %g\n", turnTolerance);
 
     EnablePositionControl( motor_left, p, i, d );
     EnablePositionControl( motor_right, p, i, d );
@@ -351,7 +349,7 @@ void MyRobot::EnablePositionControl()
 // driveScale = (1.0 inch / wheel circumference) * (wheel gear teeth / drive gear teeth);
 //            = (  1.0    /      (8.0 * PI)    ) * (      36         /       17        );
 //
-const double MyRobot::driveScale = 0.08426;
+double MyRobot::driveScale = 0.08426;
 
 // shaft encoder rotations per degree of robot rotation (when turning in place)
 // turnScale = (turn circumference / wheel circumference)
@@ -359,7 +357,13 @@ const double MyRobot::driveScale = 0.08426;
 //           = (    (19.25*PI)     /      (8.0*PI)      )
 //             * (      36         /       17        ) / 360
 //
-const double MyRobot::turnScale = 0.01415;
+
+// double MyRobot::turnScale = 0.01415;
+double MyRobot::turnScale = 0.01116;	// measured with practice bot
+
+// default PID tolerance
+double MyRobot::driveTolerance = DRIVE_TOLERANCE;
+double MyRobot::turnTolerance = TURN_TOLERANCE;
 
 double MyRobot::GetJaguarPosition( xCANJaguar& jag, const char *name )
 {
@@ -403,8 +407,8 @@ bool MyRobot::DriveToPosition( float distance )
     motor_right.Set(-pos, 1);
     xCANJaguar::UpdateSyncGroup(1);
 
-    return (fabs(left - distance) < m_driveTolerance &&
-            fabs(right - distance) < m_driveTolerance);
+    return (fabs(left - distance) < driveTolerance &&
+            fabs(right - distance) < driveTolerance);
 }
 
 double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
@@ -412,7 +416,7 @@ double MyRobot::GetJaguarAngle( xCANJaguar& jag, const char *name )
     return GetJaguarPosition(jag, name) / turnScale;
 }
 
-bool MyRobot::TurnToAngle( float angle )
+bool MyRobot::TurnToAngle( float angle, float tolerance )
 {
     float left = GetJaguarPosition(motor_left,"left") / turnScale;
     float right = GetJaguarPosition(motor_right,"right") / turnScale;
@@ -427,8 +431,8 @@ bool MyRobot::TurnToAngle( float angle )
     motor_right.Set(pos, 1);
     xCANJaguar::UpdateSyncGroup(1);
 
-    return (fabs(left - angle) < m_turnTolerance &&
-            fabs(right - angle) < m_turnTolerance);
+    return (fabs(left - angle) < tolerance &&
+            fabs(right - angle) < tolerance);
 }
 
 START_ROBOT_CLASS(MyRobot);

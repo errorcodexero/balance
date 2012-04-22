@@ -13,7 +13,9 @@ const float AutoCommand::cameraWarmup = 1.50;
 const float AutoCommand::aimTolerance = 0.50;
 const float AutoCommand::holdTimeout  = 0.50;
 const float AutoCommand::turnTimeLimit = 2.0;
-const float AutoCommand::shotTimeLimit = 4.0;
+const float AutoCommand::shotTimeLimit = 8.0;
+const float AutoCommand::driveScale = 0.027;	// determined by experiment
+const float AutoCommand::largeTurnTolerance = 1.2;
 
 const char *AutoCommand::StateName( AutoState state )
 {
@@ -127,7 +129,7 @@ void AutoCommand::StateWait()
     case 1: // left side, no bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
-	m_driveAngle = -21.4;
+	m_driveAngle = -19.5;	// -21.4;
 	m_driveDistance = 0.0;
 	break;
 
@@ -141,50 +143,50 @@ void AutoCommand::StateWait()
     case 3: // right side, no bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
-	m_driveAngle = 21.4;
+	m_driveAngle = 19.5;	// 21.4;
 	m_driveDistance = 0.0;
 	break;
 
     case 4: // left side, center bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
-	m_driveAngle = -(21.4 + 24.8);
-	m_driveDistance = -160.;	// -150.
+	m_driveAngle = -(19.5 + 20.6);	// -(21.4 + 24.8);
+	m_driveDistance = -150.;
 	break;
 
     case 5: // center, center bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 124.0;
 	m_driveAngle = 0.0;
-	m_driveDistance = -145.;	// -136.
+	m_driveDistance = -136.;
 	break;
 
     case 6: // right side, center bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
-	m_driveAngle = 21.4 + 24.8;
-	m_driveDistance = -160.;	// -150.
+	m_driveAngle = (19.5 + 20.6);	// (21.4 + 24.8);
+	m_driveDistance = -150.;
 	break;
 
     case 7: // left side, right bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
 	m_driveAngle = -(21.4 + 55.5);
-	m_driveDistance = -252.;	// -241.
+	m_driveDistance = -241.;
 	break;
 
     case 8: // center, right bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 124.0;
 	m_driveAngle = -44.9;
-	m_driveDistance = -201.;	// -193.
+	m_driveDistance = -193.;
 	break;
 
     case 9: // right side, right bridge
 	m_shotAngle = 0.0;
 	m_shotDistance = 120.0;
 	m_driveAngle = 21.4 - 28.2;
-	m_driveDistance = -165.;	// -155.
+	m_driveDistance = -155.;
 	break;
     }
 
@@ -208,7 +210,7 @@ void AutoCommand::StateWait()
 	printf("Preparing to move...\n");
 	m_robot.EnableSpeedControl();
 	m_robot.cowcatcher.Set(true);
-	m_robot.pickup.Forward();
+	// m_robot.pickup.Forward();
 	m_autoState = kDriving;
     } else {
 	m_autoState = kStopped;
@@ -357,7 +359,7 @@ void AutoCommand::StateShooting()
 	printf("Preparing to move...\n");
 	m_robot.EnableSpeedControl();
 	m_robot.cowcatcher.Set(true);
-	m_robot.pickup.Forward();
+	// m_robot.pickup.Forward();
 	m_autoState = kDriving;
     } else {
 	m_autoState = kStopped;
@@ -368,7 +370,7 @@ void AutoCommand::StateShooting()
 
 void AutoCommand::StateTurning()
 {
-    bool turnComplete = m_robot.TurnToAngle(m_driveAngle);
+    bool turnComplete = m_robot.TurnToAngle(m_driveAngle, largeTurnTolerance);
 
     if (!turnComplete && (m_autoTimer.Get() < turnTimeLimit)) {
 	return;	// just wait
@@ -380,7 +382,7 @@ void AutoCommand::StateTurning()
 	}
 	m_robot.EnableSpeedControl();
 	m_robot.cowcatcher.Set(true);
-	m_robot.pickup.Forward();
+	// m_robot.pickup.Forward();
 	m_autoState = kDriving;
     } else {
 	// turn failed, so it isn't safe to drive
@@ -398,8 +400,7 @@ void AutoCommand::StateDriving()
     // ramp up to full drive speed
     double s = (t < 0.8) ? t : 0.8;
     m_robot.drive.ArcadeDrive(-s, 0., false);
-    // 0.035 determined by experiment
-    if (t > -0.035 * m_driveDistance) {
+    if (t > -driveScale * m_driveDistance) {
 	// we're done
 	printf("Driving complete!\n");
 	m_robot.DisableMotors();
