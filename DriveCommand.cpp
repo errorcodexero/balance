@@ -73,8 +73,8 @@ bool DriveCommand::Run()
     ////////////////////////////////////////
 
     bool trigger = oi.GetRightTrigger();
-    if (trigger != m_prevTrigger) {
-	m_robot.cowcatcher.Set(trigger);
+    if (trigger && !m_prevTrigger) {
+	m_robot.cowcatcher.Set(!m_robot.cowcatcher.Get());
     }
     m_prevTrigger = trigger;
 
