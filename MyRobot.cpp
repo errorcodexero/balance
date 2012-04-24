@@ -359,7 +359,7 @@ double MyRobot::driveScale = 0.08426;
 //
 
 // double MyRobot::turnScale = 0.01415;
-double MyRobot::turnScale = 0.01116;	// measured with practice bot
+double MyRobot::turnScale = 0.0125;	// measured with practice bot
 
 // default PID tolerance
 double MyRobot::driveTolerance = DRIVE_TOLERANCE;
