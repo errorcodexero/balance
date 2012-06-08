@@ -94,8 +94,6 @@ void AutoCommand::Start()
 
 bool AutoCommand::Run()
 {
-    m_robot.shooter.Run();
-
     switch (m_autoState) {
     case kWait:		StateWait();	break;
     case kLights:	StateLights();	break;
@@ -326,28 +324,25 @@ void AutoCommand::StateHold()
 
 void AutoCommand::StateShooting()
 {
-    bool shooterReady = m_robot.shooter.IsReady();
+    m_robot.shooter.Run();
 
-    if (!shooterReady && (m_autoTimer.Get() < shotTimeLimit)) {
-	return;	// just wait
-    }
-
-    if (shooterReady) {
-	if (m_robot.m_oi.Teach()) {
-	    printf("Shoot!\n");
-	}
+    if (m_robot.shooter.IsReady()) {
 	if (++m_shotCount <= 2) {
-	    m_robot.shooter.Shoot();
 	    if (m_robot.m_oi.Teach()) {
-		printf("waiting for next shot...\n");
+		printf("Shoot %d!\n", m_shotCount);
 	    }
+	    m_robot.shooter.Shoot();
 	    return;
 	}
 	if (m_robot.m_oi.Teach()) {
 	    printf("Done shooting\n");
 	}
+    } else if (m_autoTimer.Get() > shotTimeLimit) {
+	if (m_robot.m_oi.Teach()) {
+	    printf("Shooter TIMEOUT\n");
+	}
     } else {
-	printf("Shooter TIMEOUT\n");
+	return;	// just wait
     }
 
     m_robot.shooter.Stop();
