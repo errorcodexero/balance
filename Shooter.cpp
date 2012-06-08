@@ -208,7 +208,8 @@ float Shooter::Ballistics( int height, float distance )
 	return 0.;
     }
 
-    return coeff[0] + distance * (coeff[1] + (distance * coeff[2]));
+    // 11.5% speed increase added at World
+    return (coeff[0] + distance * (coeff[1] + (distance * coeff[2]))) * 1.115;
 }
 
 void Shooter::UpdateSpeed()
